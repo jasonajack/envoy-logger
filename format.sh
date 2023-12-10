@@ -2,4 +2,4 @@
 set -eou pipefail
 cd "$(dirname "${0}")"
 
-poetry run black envoy_logger
+poetry run black envoy_logger tests

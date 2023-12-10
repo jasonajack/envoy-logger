@@ -8,6 +8,8 @@ from influxdb_client import WritePrecision, InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from . import envoy
+
+
 from .model import SampleData, PowerSample, InverterSample, filter_new_inverter_data
 from .cfg import Config
 
