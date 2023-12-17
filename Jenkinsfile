@@ -1,3 +1,5 @@
+library retriever: legacySCM(scm) _
+
 pipeline {
   agent {
     label 'workspace'
