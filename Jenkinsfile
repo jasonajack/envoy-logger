@@ -22,13 +22,13 @@ pipeline {
       steps {
         dockerBuild(
           namespace: 'maniacmog',
-          reponame: 'envoy_logger',
+          reponame: 'envoy-logger',
           tagname: 'latest'
         )
 
         dockerPush(
           namespace: 'maniacmog',
-          reponame: 'envoy_logger',
+          reponame: 'envoy-logger',
           tagname: 'latest'
         )
       }
