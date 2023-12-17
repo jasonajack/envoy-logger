@@ -18,9 +18,17 @@ pipeline {
         branch('main')
       }
       steps {
-        sh('./build_docker.sh latest')
+        dockerBuild(
+          namespace: 'maniacmog',
+          reponame: 'envoy_logger',
+          tagname: 'latest'
+        )
 
-        dockerPush(reponame: 'envoy_logger', tagname: 'latest')
+        dockerPush(
+          namespace: 'maniacmog',
+          reponame: 'envoy_logger',
+          tagname: 'latest'
+        )
       }
     }
   }

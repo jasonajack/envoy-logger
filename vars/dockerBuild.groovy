@@ -8,7 +8,6 @@ def call(Map args) {
   Objects.requireNonNull(tagname)
 
   withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-    sh(script: "docker login --username '${DOCKER_USERNAME}' --password '${DOCKER_PASSWORD}'")
-    sh(script: "docker push docker.io/${namespace}/${reponame}:${tagname}")
+    sh(script: "docker build -t docker.io/${namespace}/${reponame}:${tagname} .")
   }
 }
