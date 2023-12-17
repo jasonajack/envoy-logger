@@ -13,10 +13,10 @@ pipeline {
   }
 
   stages {
-    when {
-      branch('main')
-    }
     stage('🐳 Build and push image') {
+      when {
+        branch('main')
+      }
       steps {
         sh('./build_docker.sh latest')
 
