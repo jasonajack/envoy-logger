@@ -1,4 +1,4 @@
-library retriever: legacySCM(scm) _
+library(identifier: '@main', retriever: legacySCM(scm)) _
 
 pipeline {
   agent {
