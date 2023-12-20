@@ -9,6 +9,8 @@ from influxdb_client import WritePrecision, InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from . import envoy
+
+
 from .model import SampleData, PowerSample, InverterSample, filter_new_inverter_data
 from .cfg import Config
 
@@ -60,7 +62,7 @@ class SamplingLoop:
         try:
             time.sleep(time_to_next)
         except KeyboardInterrupt:
-            print('Exiting with Ctrl-C')
+            print("Exiting with Ctrl-C")
             sys.exit(0)
 
         data = envoy.get_power_data(self.cfg.envoy_url, self.session_id)
