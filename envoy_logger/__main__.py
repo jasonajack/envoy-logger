@@ -8,8 +8,7 @@ from .sampling_loop import SamplingLoop
 from .cfg import load_cfg
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s]: %(message)s"
+    level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s]: %(message)s"
 )
 
 parser = argparse.ArgumentParser()
