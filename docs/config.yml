@@ -26,9 +26,9 @@ influxdb:
   # This can be useful to control different data-retention rules
   # alternatively use the "bucket" key if you want everything to be sent to the
   # same bucket
-  bucket_hr: high_rate
-  bucket_lr: low_rate
-  # bucket: all_data
+  bucket_hr: envoy_high_rate
+  bucket_lr: envoy_low_rate
+  # bucket: envoy_all_data
 
 # Since the Envoy only tracks panel-level inverter production by serial number,
 # it can be useful to provide InfluxDB measurements with additional tags that

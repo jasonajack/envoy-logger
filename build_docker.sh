@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-image_name=maniacmog/envoy-logger
+image_name=jasonajack/envoy-logger
 image_and_tags=()
 docker_build_tags=()
 

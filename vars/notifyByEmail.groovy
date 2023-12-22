@@ -1,3 +1,3 @@
 def call() {
-  emailext(attachLog: true, to: 'maniacmog@gmail.com', subject: '$DEFAULT_SUBJECT', body: '$DEFAULT_CONTENT')
+  emailext(attachLog: true, to: 'jasonajack@gmail.com', subject: '$DEFAULT_SUBJECT', body: '$DEFAULT_CONTENT')
 }
