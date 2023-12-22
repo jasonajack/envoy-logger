@@ -12,18 +12,18 @@ from . import envoy
 
 
 from .model import SampleData, PowerSample, InverterSample, filter_new_inverter_data
-from .cfg import Config
+from .config import Config
 
 
 class SamplingLoop:
     interval = 5
 
-    def __init__(self, token: str, cfg: Config) -> None:
-        self.cfg = cfg
-        self.session_id = envoy.login(self.cfg.envoy_url, token)
+    def __init__(self, token: str, config: Config) -> None:
+        self.config = config
+        self.session_id = envoy.login(self.config.envoy_url, token)
 
         influxdb_client = InfluxDBClient(
-            url=cfg.influxdb_url, token=cfg.influxdb_token, org=cfg.influxdb_org
+            url=config.influxdb_url, token=config.influxdb_token, org=config.influxdb_org
         )
         self.influxdb_write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
         self.influxdb_query_api = influxdb_client.query_api()
@@ -65,12 +65,12 @@ class SamplingLoop:
             print("Exiting with Ctrl-C")
             sys.exit(0)
 
-        data = envoy.get_power_data(self.cfg.envoy_url, self.session_id)
+        data = envoy.get_power_data(self.config.envoy_url, self.session_id)
 
         return data
 
     def get_inverter_data(self) -> Dict[str, InverterSample]:
-        data = envoy.get_inverter_data(self.cfg.envoy_url, self.session_id)
+        data = envoy.get_inverter_data(self.config.envoy_url, self.session_id)
 
         if self.prev_inverter_data is None:
             self.prev_inverter_data = data
@@ -91,11 +91,11 @@ class SamplingLoop:
         hr_points = self.get_high_rate_points(data, inverter_data)
         lr_points = self.low_rate_points(data)
         self.influxdb_write_api.write(
-            bucket=self.cfg.influxdb_bucket_hr, record=hr_points
+            bucket=self.config.influxdb_bucket_hr, record=hr_points
         )
         if lr_points:
             self.influxdb_write_api.write(
-                bucket=self.cfg.influxdb_bucket_lr, record=lr_points
+                bucket=self.config.influxdb_bucket_lr, record=lr_points
             )
 
     def get_high_rate_points(
@@ -123,7 +123,7 @@ class SamplingLoop:
     ) -> Point:
         p = Point(f"{measurement_type}-line{idx}")
         p.time(data.ts, WritePrecision.S)
-        p.tag("source", self.cfg.source_tag)
+        p.tag("source", self.config.source_tag)
         p.tag("measurement-type", measurement_type)
         p.tag("line-idx", idx)
 
@@ -139,10 +139,10 @@ class SamplingLoop:
     def point_from_inverter(self, inverter: InverterSample) -> Point:
         p = Point(f"inverter-production-{inverter.serial}")
         p.time(inverter.ts, WritePrecision.S)
-        p.tag("source", self.cfg.source_tag)
+        p.tag("source", self.config.source_tag)
         p.tag("measurement-type", "inverter")
         p.tag("serial", inverter.serial)
-        self.cfg.apply_tags_to_inverter_point(p, inverter.serial)
+        self.config.apply_tags_to_inverter_point(p, inverter.serial)
 
         p.field("P", inverter.watts)
 
@@ -169,16 +169,16 @@ class SamplingLoop:
         # linear interpolation correctly.
         # https://github.com/influxdata/flux/issues/4782
         query = f"""
-        from(bucket: "{self.cfg.influxdb_bucket_hr}")
+        from(bucket: "{self.config.influxdb_bucket_hr}")
             |> range(start: -24h, stop: 0h)
-            |> filter(fn: (r) => r["source"] == "{self.cfg.source_tag}")
+            |> filter(fn: (r) => r["source"] == "{self.config.source_tag}")
             |> filter(fn: (r) => r["_field"] == "P")
             |> integral(unit: 1h)
             |> keep(columns: ["_value", "line-idx", "measurement-type", "serial"])
             |> yield(name: "total")
         """
         result = self.influxdb_query_api.query(query=query)
-        unreported_inverters = set(self.cfg.inverters.keys())
+        unreported_inverters = set(self.config.inverters.keys())
         points = []
         for table in result:
             for record in table.records:
@@ -188,14 +188,14 @@ class SamplingLoop:
                     unreported_inverters.discard(serial)
                     p = Point(f"inverter-daily-summary-{serial}")
                     p.tag("serial", serial)
-                    self.cfg.apply_tags_to_inverter_point(p, serial)
+                    self.config.apply_tags_to_inverter_point(p, serial)
                 else:
                     idx = record["line-idx"]
                     p = Point(f"{measurement_type}-daily-summary-line{idx}")
                     p.tag("line-idx", idx)
 
                 p.time(ts, WritePrecision.S)
-                p.tag("source", self.cfg.source_tag)
+                p.tag("source", self.config.source_tag)
                 p.tag("measurement-type", measurement_type)
                 p.tag("interval", "24h")
 
@@ -206,9 +206,9 @@ class SamplingLoop:
         for serial in unreported_inverters:
             p = Point(f"inverter-daily-summary-{serial}")
             p.tag("serial", serial)
-            self.cfg.apply_tags_to_inverter_point(p, serial)
+            self.config.apply_tags_to_inverter_point(p, serial)
             p.time(ts, WritePrecision.S)
-            p.tag("source", self.cfg.source_tag)
+            p.tag("source", self.config.source_tag)
             p.tag("measurement-type", measurement_type)
             p.tag("interval", "24h")
             p.field("Wh", 0.0)

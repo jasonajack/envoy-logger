@@ -19,7 +19,7 @@ RUN \
 
 RUN python3 -m pip install /opt/envoy_logger
 
-ENV ENVOY_LOGGER_CFG_PATH=/etc/envoy_logger/cfg.yaml
+ENV ENVOY_LOGGER_CFG_PATH=/etc/envoy_logger/config.yml
 ENV ENVOY_LOGGER_DB=influxdb
 
 ENTRYPOINT ["/opt/envoy_logger/entrypoint.sh"]

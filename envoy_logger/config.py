@@ -4,7 +4,7 @@ import sys
 import yaml
 from influxdb_client import Point
 
-LOG = logging.getLogger("cfg")
+LOG = logging.getLogger("config")
 
 
 class Config:
@@ -53,7 +53,7 @@ class InverterConfig:
             p.tag(k, v)
 
 
-def load_cfg(path: str):
+def load_config(path: str):
     LOG.info("Loading config: %s", path)
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.load(f.read(), Loader=yaml.FullLoader)
