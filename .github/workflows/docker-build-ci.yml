@@ -12,6 +12,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install Python dependencies
+      run: ./install_python_deps.sh
+
     - name: Run linter checkers
       run: ./test.sh
 
