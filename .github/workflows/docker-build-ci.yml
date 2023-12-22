@@ -7,7 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_and_test:
+    name: Run Docker build and CI tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -19,7 +20,4 @@ jobs:
       run: ./test.sh
 
     - name: Build the Docker image
-      run: docker build
-        -t docker.io/jasonajack/envoy-logger:$(date +%s)
-        -t docker.io/jasonajack/envoy-logger:latest
-        .
+      run: docker build -t docker.io/jasonajack/envoy-logger:$(date +%s) .
