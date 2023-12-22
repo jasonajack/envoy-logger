@@ -103,7 +103,6 @@ class SampleData:
                 pass
 
 
-# ===============================================================================
 class InverterSample:
     def __init__(self, data, ts: datetime) -> None:
         # envoy time is not particularly accurate. Use my own ts
