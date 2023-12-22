@@ -1,7 +1,7 @@
 import logging
 import argparse
 
-from . import enphaseenergy
+from .enphase_energy import EnphaseEnergy
 from .sampling_loop import SamplingLoop
 from .config import load_config
 
@@ -17,10 +17,12 @@ def main() -> None:
 
     config = load_config(args.config_path)
 
-    envoy_token = enphaseenergy.get_token(
-        config.enphase_email, config.enphase_password, config.envoy_serial
+    enphase_energy = EnphaseEnergy(
+        email=config.enphase_email,
+        password=config.enphase_password,
+        envoy_serial=config.envoy_serial,
     )
 
-    sampling_loop = SamplingLoop(envoy_token, config)
+    sampling_loop = SamplingLoop(enphase_energy, config)
 
     sampling_loop.run()

@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import Dict, Optional
 
 import yaml
 from influxdb_client import Point
@@ -10,26 +11,24 @@ LOG = logging.getLogger("config")
 class Config:
     def __init__(self, data) -> None:
         try:
-            self.enphase_email = data["enphaseenergy"]["email"]  # type: str
-            self.enphase_password = data["enphaseenergy"]["password"]  # type: str
+            self.enphase_email: str = data["enphaseenergy"]["email"]
+            self.enphase_password: str = data["enphaseenergy"]["password"]
 
             self.envoy_serial = str(data["envoy"]["serial"])
-            self.envoy_url = data["envoy"].get(
-                "url", "https://envoy.local"
-            )  # type: str
-            self.source_tag = data["envoy"].get("tag", "envoy")  # type: str
+            self.envoy_url: str = data["envoy"].get("url", "https://envoy.local")
+            self.source_tag: str = data["envoy"].get("tag", "envoy")
 
-            self.influxdb_url = data["influxdb"]["url"]  # type: str
-            self.influxdb_token = data["influxdb"]["token"]  # type: str
-            self.influxdb_org = data["influxdb"].get("org", "home")  # type: str
+            self.influxdb_url: str = data["influxdb"]["url"]
+            self.influxdb_token: str = data["influxdb"]["token"]
+            self.influxdb_org: str = data["influxdb"].get("org", "home")
 
-            bucket = data["influxdb"].get("bucket", None)
-            bucket_lr = data["influxdb"].get("bucket_lr", None)
-            bucket_hr = data["influxdb"].get("bucket_hr", None)
-            self.influxdb_bucket_lr = bucket_lr or bucket
-            self.influxdb_bucket_hr = bucket_hr or bucket
+            bucket: Optional[str] = data["influxdb"].get("bucket", None)
+            bucket_lr: Optional[str] = data["influxdb"].get("bucket_lr", None)
+            bucket_hr: Optional[str] = data["influxdb"].get("bucket_hr", None)
+            self.influxdb_bucket_lr: str = bucket_lr or bucket
+            self.influxdb_bucket_hr: str = bucket_hr or bucket
 
-            self.inverters = {}  # type: Dict[str, InverterConfig]
+            self.inverters: Dict[str, InverterConfig] = {}
             for serial, inverter_data in data.get("inverters", {}).items():
                 serial = str(serial)
                 self.inverters[serial] = InverterConfig(inverter_data, serial)

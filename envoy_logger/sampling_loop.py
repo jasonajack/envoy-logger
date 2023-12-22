@@ -8,19 +8,26 @@ from requests.exceptions import ReadTimeout, ConnectTimeout
 from influxdb_client import WritePrecision, InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
+from .enphase_energy import EnphaseEnergy
+
 from . import envoy
 
 
-from .model import SampleData, PowerSample, InverterSample, filter_new_inverter_data
+from .model import (
+    SampleData,
+    PowerSample,
+    InverterSample,
+    filter_new_inverter_data,
+)
 from .config import Config
 
 
 class SamplingLoop:
     interval = 5
 
-    def __init__(self, token: str, config: Config) -> None:
+    def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
         self.config = config
-        self.session_id = envoy.login(self.config.envoy_url, token)
+        self.session_id = envoy.login(self.config.envoy_url, enphase_energy.get_token())
 
         influxdb_client = InfluxDBClient(
             url=config.influxdb_url,

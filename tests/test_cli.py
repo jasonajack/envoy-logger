@@ -5,7 +5,7 @@ from unittest import mock
 from envoy_logger import cli
 
 
-@mock.patch("envoy_logger.enphaseenergy.get_token")
+@mock.patch("envoy_logger.enphase_energy.EnphaseEnergy")
 @mock.patch("envoy_logger.cli.SamplingLoop")
 @mock.patch("sys.argv", ["--config", "./docs/config.yml"])
 class TestCli(unittest.TestCase):
