@@ -23,7 +23,9 @@ class SamplingLoop:
         self.session_id = envoy.login(self.config.envoy_url, token)
 
         influxdb_client = InfluxDBClient(
-            url=config.influxdb_url, token=config.influxdb_token, org=config.influxdb_org
+            url=config.influxdb_url,
+            token=config.influxdb_token,
+            org=config.influxdb_org,
         )
         self.influxdb_write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
         self.influxdb_query_api = influxdb_client.query_api()

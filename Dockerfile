@@ -17,7 +17,8 @@ RUN \
   # Fix file permissions
   chmod a+x /opt/envoy_logger/entrypoint.sh
 
-RUN python3 -m pip install /opt/envoy_logger
+RUN python3 -m pip install /opt/envoy_logger && \
+  python3 -m pip cache purge
 
 ENV ENVOY_LOGGER_CFG_PATH=/etc/envoy_logger/config.yml
 ENV ENVOY_LOGGER_DB=influxdb
