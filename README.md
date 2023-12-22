@@ -1,5 +1,7 @@
 # Enphase Envoy data logging service
 
+![docker](https://github.com/jasonajack/envoy-logger/actions/workflows/docker-image.yml/badge.svg)
+
 Log your solar production locally and feed it into an InfluxDB time-series database.
 
 This Python-based logging application handles the following:
