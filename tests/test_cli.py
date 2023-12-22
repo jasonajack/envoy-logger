@@ -7,7 +7,7 @@ from envoy_logger import cli
 
 @mock.patch("envoy_logger.enphaseenergy.get_token")
 @mock.patch("envoy_logger.cli.SamplingLoop")
-@mock.patch("sys.argv", ["--config", "./tests/config.yml"])
+@mock.patch("sys.argv", ["--config", "./docs/config.yml"])
 class TestCli(unittest.TestCase):
     def test_main_success(self, mock_sampling_loop, mock_get_token):
         mock_get_token.return_value = "foobar123456"
