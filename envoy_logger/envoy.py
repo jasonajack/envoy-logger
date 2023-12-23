@@ -1,13 +1,13 @@
-from dataclasses import dataclass
-import requests
-import urllib3
-from datetime import datetime, timezone
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from .model import InverterSample, SampleData, parse_inverter_data
+import requests
+import urllib3
 
 from .enphase_energy import EnphaseEnergy
+from .model import InverterSample, SampleData, parse_inverter_data
 
 # Local envoy access uses self-signed certificate. Ignore the warning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

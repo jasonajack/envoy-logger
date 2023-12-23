@@ -1,10 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime, timedelta
-import json
 import base64
-import os
+import json
 import logging
+import os
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Optional
 
 import requests
 from appdirs import user_cache_dir

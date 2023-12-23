@@ -1,7 +1,6 @@
 import base64
 import json
 import unittest
-
 from unittest import mock
 
 from requests import Response

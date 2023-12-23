@@ -1,5 +1,4 @@
 import unittest
-
 from unittest import mock
 
 from envoy_logger import cli

@@ -1,25 +1,16 @@
-from datetime import datetime, date
-import time
-from typing import List, Dict
 import logging
 import sys
+import time
+from datetime import date, datetime
+from typing import Dict, List
 
-from influxdb_client import WritePrecision, InfluxDBClient, Point
+from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-from .sampling_engine import SampleEngine
-
-from .envoy import Envoy
-
-from .enphase_energy import EnphaseEnergy
-
-
-from .model import (
-    SampleData,
-    PowerSample,
-    InverterSample,
-)
 from .config import Config
+from .enphase_energy import EnphaseEnergy
+from .model import InverterSample, PowerSample, SampleData
+from .sampling_engine import SampleEngine
 
 LOG = logging.getLogger("sampling_loop")
 
@@ -28,8 +19,7 @@ class InfluxdbSamplingEngine(SampleEngine):
     interval: int = 5
 
     def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
-        self.config = config
-        self.envoy = Envoy(self.config.envoy_url, enphase_energy)
+        super(enphase_energy=enphase_energy, config=config)
 
         influxdb_client = InfluxDBClient(
             url=config.influxdb_url,

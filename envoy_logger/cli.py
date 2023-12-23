@@ -1,9 +1,9 @@
-import logging
 import argparse
+import logging
 
+from .config import load_config
 from .enphase_energy import EnphaseEnergy
 from .influxdb_sampling_engine import InfluxdbSamplingEngine
-from .config import load_config
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s]: %(message)s"

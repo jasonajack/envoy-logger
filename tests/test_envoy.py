@@ -1,7 +1,6 @@
+import unittest
 from datetime import datetime, timezone
 from typing import Any, Dict
-import unittest
-
 from unittest import mock
 
 from requests import Response

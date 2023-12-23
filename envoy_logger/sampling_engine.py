@@ -2,12 +2,20 @@ import logging
 from typing import Dict
 
 from requests import ConnectTimeout, ReadTimeout
+
+from .config import Config
+from .enphase_energy import EnphaseEnergy
+from .envoy import Envoy
 from .model import InverterSample, SampleData, filter_new_inverter_data
 
 LOG = logging.getLogger("sample_engine")
 
 
 class SampleEngine:
+    def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
+        self.config = config
+        self.envoy = Envoy(self.config.envoy_url, enphase_energy)
+
     def collect_samples_with_retry(
         self, retries=10, wait=5
     ) -> SampleData | Dict[str, InverterSample]:
