@@ -4,16 +4,16 @@
 
 ![docker-push](https://github.com/jasonajack/envoy-logger/actions/workflows/build-and-push.yml/badge.svg)
 
-
 Log your solar production locally and feed it into an InfluxDB time-series database.
 
 This Python-based logging application handles the following:
-* Automatically fetch the Envoy authentication token from enphaseenergy.com
-* Authenticate a session with your local Envoy hardware
-* Scrape solar production data:
-    * Per-phase production, consumption, and net
-    * Per-phase voltage, phase angle, etc.
-    * Per-panel production
+
+- Automatically fetch the Envoy authentication token from enphaseenergy.com
+- Authenticate a session with your local Envoy hardware
+- Scrape solar production data:
+  - Per-phase production, consumption, and net
+  - Per-phase voltage, phase angle, etc.
+  - Per-panel production
 
 Once in InfluxDB, you can display the data on a Grafana dashboard.
 
@@ -29,7 +29,7 @@ Dashboard Daily Totals:
 
 This is where your time-series data gets stored. The logging script featured in this repository writes into this database, and the Grafana front-end reads from it.
 
-You can pull the InfluxDB docker image from here: https://hub.docker.com/_/influxdb/
+You can pull the InfluxDB docker image from here: https://hub.docker.com/\_/influxdb/
 
 An example compose:
 
@@ -54,8 +54,8 @@ volumes:
 
 Once running, log in and configure your organization. Configure two buckets:
 
-* envoy_low_rate
-* envoy_high_rate
+- envoy_low_rate
+- envoy_high_rate
 
 Create an access token for the logging script so that it is able to read/write the database. Optionally you may create an additional, separate read-only access token for Grafana to read from the database or simply reuse the read/write access token.
 
