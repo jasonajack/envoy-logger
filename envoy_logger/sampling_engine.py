@@ -7,7 +7,7 @@ from requests import ConnectTimeout, ReadTimeout
 from .envoy import Envoy
 from .model import InverterSample, SampleData, filter_new_inverter_data
 
-LOG = logging.getLogger("sample_engine")
+LOG = logging.getLogger("sampling_engine")
 
 
 class SamplingEngine:

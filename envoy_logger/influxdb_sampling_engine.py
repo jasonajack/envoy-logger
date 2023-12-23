@@ -12,7 +12,7 @@ from .envoy import Envoy
 from .model import InverterSample, PowerSample, SampleData
 from .sampling_engine import SamplingEngine
 
-LOG = logging.getLogger("sampling_loop")
+LOG = logging.getLogger("influxdb_sampling_engine")
 
 
 class InfluxdbSamplingEngine(SamplingEngine):

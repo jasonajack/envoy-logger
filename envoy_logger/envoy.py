@@ -26,20 +26,11 @@ class Envoy:
         now = datetime.now()
         elapsed = now - self.session_id_last_update
 
-        if not self.session_id or elapsed > timedelta(hours = 12):
+        if not self.session_id or elapsed > timedelta(hours=12):
             self._login()
             self.session_id_last_update = now
 
         return self.session_id
-
-    def _wait_for_next_cycle(self) -> None:
-        # Determine how long until the next sample needs to be taken
-
-        try:
-            time.sleep(time_to_next)
-        except KeyboardInterrupt:
-            print("Exiting with Ctrl-C")
-            sys.exit(0)
 
     def _login(self) -> None:
         """
