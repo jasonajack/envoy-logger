@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 from prometheus_client import Info, start_http_server
 
@@ -53,18 +53,20 @@ class PrometheusSamplingEngine(SamplingEngine):
     def _update_line_sample(
         self, measurement_type: str, line_index: int, line_sample: PowerSample
     ) -> None:
-        name = f"envoy_{measurement_type}_line{line_index}"
-        prometheus_info = self._get_prometheus_info(name, measurement_type, line_index)
-        prometheus_info.info(line_sample.asdict())
+        name = f"envoy_{measurement_type}"
+        prometheus_info = self._get_prometheus_info(
+            name, f"Envoy {measurement_type} samples."
+        )
+        prometheus_info.info(
+            _convert_to_info_dict({"line": line_index} | line_sample.asdict())
+        )
 
-    def _get_prometheus_info(
-        self, name: str, measurement_type: str, line_index: int
-    ) -> Info:
+    def _get_prometheus_info(self, name: str, documentation: str) -> Info:
         prometheus_info = self.prometheus_info.get(name)
         if not prometheus_info:
             prometheus_info = Info(
                 name=name,
-                documentation=f"Envoy {measurement_type} samples for line {line_index}",
+                documentation=documentation,
             )
 
         self.prometheus_info[name] = prometheus_info
@@ -74,4 +76,17 @@ class PrometheusSamplingEngine(SamplingEngine):
     def _update_inverter_data_info(
         self, inverter_data: Dict[str, InverterSample]
     ) -> None:
-        pass
+        for serial, inverter_sample in inverter_data.items():
+            self._update_inverter_sample(serial, inverter_sample)
+
+    def _update_inverter_sample(
+        self, serial: str, inverter_sample: InverterSample
+    ) -> None:
+        prometheus_info = self._get_prometheus_info(
+            "envoy_inverter_sample", "Envoy inverter data."
+        )
+        prometheus_info.info(_convert_to_info_dict(inverter_sample.asdict()))
+
+
+def _convert_to_info_dict(any_dict: Dict[str, Any]) -> Dict[str, str]:
+    return {key: str(val) for key, val in any_dict.items()}

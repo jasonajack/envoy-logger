@@ -159,6 +159,9 @@ class InverterSample:
     def __str__(self) -> str:
         return json.dumps(asdict(self), indent=1, default=str)
 
+    def asdict(self) -> Dict[str, Any]:
+        return asdict(self)
+
 
 def parse_inverter_data(data) -> Dict[str, InverterSample]:
     """
