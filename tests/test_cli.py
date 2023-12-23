@@ -6,7 +6,7 @@ from envoy_logger import cli
 
 
 @mock.patch("envoy_logger.enphase_energy.EnphaseEnergy")
-@mock.patch("envoy_logger.cli.SamplingLoop")
+@mock.patch("envoy_logger.cli.InfluxdbSamplingEngine")
 @mock.patch("sys.argv", ["--config", "./docs/config.yml"])
 class TestCli(unittest.TestCase):
     def test_main_success(self, mock_sampling_loop, mock_enphase_energy):

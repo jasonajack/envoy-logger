@@ -24,7 +24,7 @@ from .config import Config
 LOG = logging.getLogger("sampling_loop")
 
 
-class SamplingLoop(SampleEngine):
+class InfluxdbSamplingEngine(SampleEngine):
     interval: int = 5
 
     def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:

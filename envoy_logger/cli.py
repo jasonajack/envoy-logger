@@ -2,7 +2,7 @@ import logging
 import argparse
 
 from .enphase_energy import EnphaseEnergy
-from .sampling_loop import SamplingLoop
+from .influxdb_sampling_engine import InfluxdbSamplingEngine
 from .config import load_config
 
 logging.basicConfig(
@@ -23,6 +23,6 @@ def main() -> None:
         envoy_serial=config.envoy_serial,
     )
 
-    sampling_loop = SamplingLoop(enphase_energy, config)
+    sampling_loop = InfluxdbSamplingEngine(enphase_energy, config)
 
     sampling_loop.run()
