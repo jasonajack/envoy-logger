@@ -48,10 +48,15 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     envoy = Envoy(url=config.envoy_url, enphase_energy=enphase_energy)
 
-    if args.db == "influxdb":
-        sampling_loop = InfluxdbSamplingEngine(envoy=envoy, config=config)
-        sampling_loop.run()
-    elif args.db == "prometheus":
-        raise NotImplementedError(f"Database backend not yet implemented: {args.db}")
-    else:
-        raise NotImplementedError(f"Database backend not yet implemented: {args.db}")
+    match args.db:
+        case "influxdb":
+            sampling_loop = InfluxdbSamplingEngine(envoy=envoy, config=config)
+            sampling_loop.run()
+        case "prometheus":
+            raise NotImplementedError(
+                f"Database backend not yet implemented: {args.db}"
+            )
+        case _:
+            raise NotImplementedError(
+                f"Database backend not yet implemented: {args.db}"
+            )

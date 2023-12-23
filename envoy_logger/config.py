@@ -18,18 +18,19 @@ class Config:
             self.envoy_url: str = data["envoy"].get("url", "https://envoy.local")
             self.source_tag: str = data["envoy"].get("tag", "envoy")
 
-            if database == "influxdb":
-                self.influxdb_url: str = data["influxdb"]["url"]
-                self.influxdb_token: str = data["influxdb"]["token"]
-                self.influxdb_org: str = data["influxdb"].get("org", "home")
-            elif database == "prometheus":
-                self.prometheus_listening_port: int = data["prometheus"][
-                    "listening_port"
-                ]
-            else:
-                raise NotImplementedError(
-                    f"Database backend not yet implemented: {database}"
-                )
+            match database:
+                case "influxdb":
+                    self.influxdb_url: str = data["influxdb"]["url"]
+                    self.influxdb_token: str = data["influxdb"]["token"]
+                    self.influxdb_org: str = data["influxdb"].get("org", "home")
+                case "prometheus":
+                    self.prometheus_listening_port: int = data["prometheus"][
+                        "listening_port"
+                    ]
+                case _:
+                    raise NotImplementedError(
+                        f"Database backend not yet implemented: {database}"
+                    )
 
             bucket: Optional[str] = data["influxdb"].get("bucket", None)
             bucket_lr: Optional[str] = data["influxdb"].get("bucket_lr", None)
