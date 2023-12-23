@@ -8,7 +8,7 @@ from .envoy import Envoy
 from .influxdb_sampling_engine import InfluxdbSamplingEngine
 
 logging.basicConfig(
-    level=os.environ.get("LOGLEVEL", "INFO").upper(),
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s %(levelname)s [%(name)s]: %(message)s",
 )
 
