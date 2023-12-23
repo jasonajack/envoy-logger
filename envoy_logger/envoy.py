@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import requests
@@ -20,12 +20,26 @@ class Envoy:
     url: str
     enphase_energy: EnphaseEnergy
     session_id: Optional[str] = None
+    session_id_last_update: datetime = datetime.now()
 
     def get_session_id(self) -> str:
-        if not self.session_id:
+        now = datetime.now()
+        elapsed = now - self.session_id_last_update
+
+        if not self.session_id or elapsed > timedelta(hours = 12):
             self._login()
+            self.session_id_last_update = now
 
         return self.session_id
+
+    def _wait_for_next_cycle(self) -> None:
+        # Determine how long until the next sample needs to be taken
+
+        try:
+            time.sleep(time_to_next)
+        except KeyboardInterrupt:
+            print("Exiting with Ctrl-C")
+            sys.exit(0)
 
     def _login(self) -> None:
         """
