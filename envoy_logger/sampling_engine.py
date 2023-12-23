@@ -1,10 +1,9 @@
 import logging
-from typing import Dict
+import time
+from typing import Dict, Optional
 
 from requests import ConnectTimeout, ReadTimeout
 
-from .config import Config
-from .enphase_energy import EnphaseEnergy
 from .envoy import Envoy
 from .model import InverterSample, SampleData, filter_new_inverter_data
 
@@ -12,12 +11,13 @@ LOG = logging.getLogger("sample_engine")
 
 
 class SampleEngine:
-    def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
-        self.config = config
-        self.envoy = Envoy(self.config.envoy_url, enphase_energy)
+    prev_inverter_data: Optional[Dict[str, InverterSample]] = None
+
+    def __init__(self, envoy: Envoy) -> None:
+        self.envoy = envoy
 
     def collect_samples_with_retry(
-        self, retries=10, wait=5
+        self, retries: int = 10, wait_seconds: float = 5.0
     ) -> SampleData | Dict[str, InverterSample]:
         for retry_loop in range(retries):
             try:
@@ -27,13 +27,13 @@ class SampleEngine:
                 # Envoy gets REALLY MAD if you block it's access to enphaseenergy.com using a VLAN.
                 # Its software gets hung up for some reason, and some requests will stall.
                 # Allow envoy requests to timeout (and skip this sample iteration)
-                logging.warning("Envoy request timed out (%d/10)", retry_loop + 1)
-                pass
+                LOG.warning("Envoy request timed out (%d/%d)", retry_loop + 1, retries)
+                time.sleep(wait_seconds)
             else:
                 return power_data, inverter_data
 
         # If we got this far it means we've timed out, raise an exception
-        raise
+        raise TimeoutError("Sample collection timed out.")
 
     def get_power_data(self) -> SampleData:
         return self.envoy.get_power_data()

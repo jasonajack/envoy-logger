@@ -9,6 +9,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 from .config import Config
 from .enphase_energy import EnphaseEnergy
+from .envoy import Envoy
 from .model import InverterSample, PowerSample, SampleData
 from .sampling_engine import SampleEngine
 
@@ -19,20 +20,19 @@ class InfluxdbSamplingEngine(SampleEngine):
     interval: int = 5
 
     def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
-        super(enphase_energy=enphase_energy, config=config)
+        super(Envoy(config=config.envoy_url, enphase_energy=enphase_energy))
 
         influxdb_client = InfluxDBClient(
             url=config.influxdb_url,
             token=config.influxdb_token,
             org=config.influxdb_org,
         )
+
         self.influxdb_write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
         self.influxdb_query_api = influxdb_client.query_api()
 
         # Used to track the transition to the next day for daily measurements
         self.todays_date = date.today()
-
-        self.prev_inverter_data = None
 
     def run(self):
         while True:

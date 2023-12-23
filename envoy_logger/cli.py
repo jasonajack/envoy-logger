@@ -1,12 +1,14 @@
 import argparse
 import logging
+import os
 
 from .config import load_config
 from .enphase_energy import EnphaseEnergy
 from .influxdb_sampling_engine import InfluxdbSamplingEngine
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s]: %(message)s"
+    level=os.environ.get("LOGLEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s [%(name)s]: %(message)s",
 )
 
 
