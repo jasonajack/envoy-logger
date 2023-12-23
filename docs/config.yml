@@ -1,3 +1,5 @@
+---
+
 # Config file for envoy-logger
 
 # Your login info for enphaseenergy.com
@@ -40,7 +42,8 @@ influxdb:
 # Since my layout is pretty simple, I chose to tag them with simple row/column numbers.
 # Up to you to define a labeling scheme that works for you.
 inverters:
-  "202212345600": # This is the inverter's serial number. NOT the inverter ID, module ID, or SKU as displayed in some places
+  # This is the inverter's serial number. NOT the inverter ID, module ID, or SKU as displayed in some places
+  "202212345600":
     tags:
       row: 1
       col: 1

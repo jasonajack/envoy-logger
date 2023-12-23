@@ -14,11 +14,12 @@ PyYAML = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
+coverage = "*"
 isort = "*"
 flake8 = "*"
 pytest = "*"
 pytest-mock = "*"
-coverage = "*"
+yamllint = "*"
 
 [build-system]
 requires = ["poetry-core"]
