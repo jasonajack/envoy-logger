@@ -8,19 +8,18 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from .config import Config
-from .enphase_energy import EnphaseEnergy
 from .envoy import Envoy
 from .model import InverterSample, PowerSample, SampleData
-from .sampling_engine import SampleEngine
+from .sampling_engine import SamplingEngine
 
 LOG = logging.getLogger("sampling_loop")
 
 
-class InfluxdbSamplingEngine(SampleEngine):
-    interval: int = 5
+class InfluxdbSamplingEngine(SamplingEngine):
+    def __init__(self, envoy: Envoy, config: Config, interval_seconds: int = 5) -> None:
+        super().__init__(envoy=envoy)
 
-    def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
-        super(Envoy(config=config.envoy_url, enphase_energy=enphase_energy))
+        self.config = config
 
         influxdb_client = InfluxDBClient(
             url=config.influxdb_url,
@@ -33,20 +32,24 @@ class InfluxdbSamplingEngine(SampleEngine):
 
         # Used to track the transition to the next day for daily measurements
         self.todays_date = date.today()
+        self.interval_seconds = interval_seconds
 
     def run(self):
         while True:
-            self._wait_for_next_cycle()
-            LOG.debug("Collecting samples.")
+            self._collect_samples()
 
-            power_data, inverter_data = self.collect_samples_with_retry()
+    def _collect_samples(self) -> None:
+        self._wait_for_next_cycle()
+        LOG.debug("Collecting samples.")
 
-            self._write_to_influxdb(power_data, inverter_data)
+        power_data, inverter_data = self.collect_samples_with_retry()
+
+        self._write_to_influxdb(power_data, inverter_data)
 
     def _wait_for_next_cycle(self) -> None:
         # Determine how long until the next sample needs to be taken
         now = datetime.now()
-        time_to_next = self.interval - (now.timestamp() % self.interval)
+        time_to_next = self.interval_seconds - (now.timestamp() % self.interval_seconds)
 
         try:
             time.sleep(time_to_next)

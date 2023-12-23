@@ -31,3 +31,7 @@ pythonpath = ["."]
 
 [tool.coverage.run]
 branch = true
+
+[tool.isort]
+profile = "black"
+src_paths = ["envoy_logger", "test"]

@@ -1,9 +1,9 @@
 import unittest
 from datetime import datetime, timezone
-from typing import Any, Dict
 from unittest import mock
 
 from requests import Response
+from tests.sample_data import create_inverter_data, create_sample_data
 
 from envoy_logger.envoy import Envoy
 from envoy_logger.model import SampleData, parse_inverter_data
@@ -39,7 +39,7 @@ class TestEnvoy(unittest.TestCase):
         mock_login_response = mock.Mock(Response)
         mock_login_response.cookies = {"sessionId": "foobar"}
 
-        power_data = _create_sample_data()
+        power_data = create_sample_data()
         mock_power_data_response = mock.Mock(Response)
         mock_power_data_response.json.return_value = power_data
 
@@ -72,8 +72,8 @@ class TestEnvoy(unittest.TestCase):
         mock_login_response.cookies = {"sessionId": "foobar"}
 
         test_inverter_data = [
-            _create_inverter_data(),
-            _create_inverter_data(),
+            create_inverter_data(),
+            create_inverter_data(),
         ]
         mock_inverter_data_response = mock.Mock(Response)
         mock_inverter_data_response.json.return_value = test_inverter_data
@@ -96,57 +96,6 @@ class TestEnvoy(unittest.TestCase):
             inverter_data["foobar"].watts,
             expected_inverter_data["foobar"].watts,
         )
-
-
-def _create_sample_data() -> Dict[str, Any]:
-    return {
-        "consumption": [
-            _create_eim_sample("net-consumption"),
-            _create_eim_sample("total-consumption"),
-        ],
-        "production": [
-            _create_eim_sample("production"),
-        ],
-    }
-
-
-def _create_eim_sample(measurement_type: str) -> Dict[str, Any]:
-    return {
-        "type": "eim",
-        "measurementType": measurement_type,
-        "lines": [
-            _create_power_sample(),
-            _create_power_sample(),
-            _create_power_sample(),
-        ],
-    }
-
-
-def _create_power_sample() -> Dict[str, float]:
-    return {
-        "wNow": 1.23,
-        "rmsCurrent": 1.23,
-        "rmsVoltage": 1.23,
-        "reactPwr": 1.23,
-        "apprntPwr": 1.23,
-        "whToday": 1.23,
-        "vahToday": 1.23,
-        "varhLagToday": 1.23,
-        "varhLeadToday": 1.23,
-        "whLifetime": 1.23,
-        "vahLifetime": 1.23,
-        "varhLagLifetime": 1.23,
-        "varhLeadLifetime": 1.23,
-        "whLastSevenDays": 1.23,
-    }
-
-
-def _create_inverter_data() -> Dict[str, Any]:
-    return {
-        "serialNumber": "foobar",
-        "lastReportDate": 123456789,
-        "lastReportWatts": 123,
-    }
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ from .model import InverterSample, SampleData, filter_new_inverter_data
 LOG = logging.getLogger("sample_engine")
 
 
-class SampleEngine:
+class SamplingEngine:
     prev_inverter_data: Optional[Dict[str, InverterSample]] = None
 
     def __init__(self, envoy: Envoy) -> None:
