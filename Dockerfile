@@ -14,6 +14,4 @@ RUN \
   # Install dependencies
   poetry install
 
-ENV ENVOY_LOGGER_CFG_PATH=/etc/envoy_logger/config.yml
-
 ENTRYPOINT ["./launcher.sh"]

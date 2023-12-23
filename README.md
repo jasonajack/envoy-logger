@@ -69,7 +69,7 @@ Locally test that the logging script can read from your Envoy, and push data to 
 
 ```bash
 ./install_python_deps.sh
-ENVOY_LOGGER_CFG_PATH=path/tp/your/config.yml ./launcher.sh
+./launcher.sh --config /path/to/your/config.yml
 ```
 
 If you've configured everything correctly you should see logs indicating authentication succeeded with both your Envoy and InfluxDB, and no error messages from the script. Login to your InfluxDB server and start exploring the data using their "Data Explorer" tool. If it's working properly, you should start seeing the data flow in. I recommend that you poke around and get familiar with how the data is structured, since it will help you build queries for your dashboard later.
@@ -85,6 +85,10 @@ services:
   envoy_logger:
     image: jasonajack/envoy-logger:latest
     container_name: envoy_logger
+    environment:
+      #ENVOY_LOGGER_CFG_PATH: /etc/envoy_logger/config.yml
+      #ENVOY_LOGGER_DB: influxdb
+      #ENVOY_LOGGER_DB: prometheus
     volumes:
       - /path/to/config.yml:/etc/envoy_logger/config.yml
       - /etc/localtime:/etc/localtime:ro

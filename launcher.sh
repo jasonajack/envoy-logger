@@ -2,4 +2,4 @@
 set -eou pipefail
 cd "$(dirname "${0}")"
 
-exec poetry run python3 -m envoy_logger "${ENVOY_LOGGER_CFG_PATH}"
+exec poetry run python3 -m envoy_logger "${@}"
