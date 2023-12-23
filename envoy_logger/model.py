@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
@@ -76,13 +76,12 @@ class PowerSample:
 
 @dataclass(frozen=True)
 class SampleData:
-    ts: datetime
     net_consumption: Optional[EIMSample]
     total_consumption: Optional[EIMSample]
     total_production: Optional[EIMSample]
 
     @staticmethod
-    def create(sample_data: Dict[str, Any], ts: datetime) -> SampleData:
+    def create(sample_data: Dict[str, Any]) -> SampleData:
         net_consumption: Optional[EIMSample]
         total_consumption: Optional[EIMSample]
         total_production: Optional[EIMSample]
@@ -90,20 +89,19 @@ class SampleData:
         for consumption_data in sample_data["consumption"]:
             if consumption_data["type"] == "eim":
                 if consumption_data["measurementType"] == "net-consumption":
-                    net_consumption = EIMSample.create(consumption_data, ts)
+                    net_consumption = EIMSample.create(consumption_data)
                 elif consumption_data["measurementType"] == "total-consumption":
-                    total_consumption = EIMSample.create(consumption_data, ts)
+                    total_consumption = EIMSample.create(consumption_data)
 
         for production_data in sample_data["production"]:
             if production_data["type"] == "eim":
                 if production_data["measurementType"] == "production":
-                    total_production = EIMSample.create(production_data, ts)
+                    total_production = EIMSample.create(production_data)
             elif production_data["type"] == "inverters":
                 # TODO: Parse this data too
                 pass
 
         return SampleData(
-            ts=ts,
             net_consumption=net_consumption,
             total_consumption=total_consumption,
             total_production=total_production,
@@ -123,12 +121,13 @@ class EIMSample:
     Better to recalculate the values locally
     """
 
-    ts: datetime
     eim_line_samples: List[PowerSample]
 
     @staticmethod
-    def create(line_data: Dict[str, Any], ts: datetime) -> EIMSample:
+    def create(line_data: Dict[str, Any]) -> EIMSample:
         assert line_data["type"] == "eim"
+
+        ts = datetime.fromtimestamp(line_data["readingTime"], tz=timezone.utc)
 
         eim_line_samples = [
             PowerSample.create(power_data=power_data, ts=ts)
@@ -136,7 +135,6 @@ class EIMSample:
         ]
 
         return EIMSample(
-            ts=ts,
             eim_line_samples=eim_line_samples,
         )
 
@@ -148,15 +146,13 @@ class EIMSample:
 class InverterSample:
     ts: datetime
     serial: str
-    report_ts: int
     watts: int
 
     @staticmethod
-    def create(inverter_data: Dict[str, Any], ts: datetime) -> InverterSample:
+    def create(inverter_data: Dict[str, Any]) -> InverterSample:
         return InverterSample(
-            ts=ts,
+            ts=datetime.fromtimestamp(inverter_data["lastReportDate"], tz=timezone.utc),
             serial=inverter_data["serialNumber"],
-            report_ts=inverter_data["lastReportDate"],
             watts=inverter_data["lastReportWatts"],
         )
 
@@ -164,37 +160,29 @@ class InverterSample:
         return json.dumps(asdict(self), indent=1, default=str)
 
 
-def parse_inverter_data(data, ts: datetime) -> Dict[str, InverterSample]:
+def parse_inverter_data(data) -> Dict[str, InverterSample]:
     """
     Parse inverter JSON list and return a dictionary of inverter samples, keyed
-    by their serial number
+    by their serial number.
     """
     inverters = {}
 
     for inverter_data in data:
-        inverter = InverterSample.create(inverter_data, ts)
+        inverter = InverterSample.create(inverter_data)
         inverters[inverter.serial] = inverter
 
     return inverters
 
 
 def filter_new_inverter_data(
-    new_data: Dict[str, InverterSample], prev_data: Dict[str, InverterSample]
+    inverter_data: Dict[str, InverterSample], last_sample_timestamp: Optional[datetime]
 ) -> Dict[str, InverterSample]:
     """
-    Inverter measurements only update if inverter actually sends a reported
-    value.
-    Compare against a prior sample, and return a new dict of inverters samples
-    that only contains the unique measurements
+    Inverter measurements only update if inverter actually sends a reported value.
     """
-    unique_inverters: Dict[str, InverterSample] = {}
-    for serial, inverter in new_data.items():
-        if serial not in prev_data.keys():
-            unique_inverters[serial] = inverter
-            continue
+    filtered_inverter_data: Dict[str, InverterSample] = {}
+    for serial, inverter_sample in inverter_data.items():
+        if not last_sample_timestamp or inverter_sample.ts > last_sample_timestamp:
+            filtered_inverter_data[serial] = inverter_sample
 
-        if inverter.report_ts != prev_data[serial].report_ts:
-            unique_inverters[serial] = inverter
-            continue
-
-    return unique_inverters
+    return filtered_inverter_data

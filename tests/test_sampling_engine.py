@@ -18,28 +18,12 @@ class TestSamplingEngine(unittest.TestCase):
         mock_sample_data = mock.Mock(SampleData)
         mock_inverter_sample = mock.Mock(InverterSample)
 
-        mock_inverter_data = {"foobarA": mock_inverter_sample}
+        mock_inverter_data = {"foobar": mock_inverter_sample}
 
         mock_envoy.get_power_data.return_value = mock_sample_data
         mock_envoy.get_inverter_data.return_value = mock_inverter_data
 
         sampling_engine = SamplingEngineChildClass(envoy=mock_envoy)
-
-        # Grab first sample; inverter_data will be empty here because it only returns on the second scan from start
-        sample_data, inverter_data = sampling_engine.collect_samples_with_retry()
-
-        self.assertEqual(
-            sample_data,
-            mock_sample_data,
-        )
-        self.assertEqual(
-            len(inverter_data),
-            0,
-        )
-
-        # Grab second sample; this should return the inverter sample
-        mock_inverter_data = {"foobarB": mock_inverter_sample}
-        mock_envoy.get_inverter_data.return_value = mock_inverter_data
 
         sample_data, inverter_data = sampling_engine.collect_samples_with_retry()
 

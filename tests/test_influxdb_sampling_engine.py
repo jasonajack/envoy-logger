@@ -36,12 +36,8 @@ class TestInfluxdbSamplingEngine(unittest.TestCase):
         mock_config.source_tag = "envoy"
         mock_config.inverters = {"foo": {}, "bar": {}}
 
-        test_sample_data = SampleData.create(
-            sample_data=create_sample_data(), ts=date.today()
-        )
-        test_inverter_data = parse_inverter_data(
-            [create_inverter_data("foobarA")], date.today()
-        )
+        test_sample_data = SampleData.create(sample_data=create_sample_data())
+        test_inverter_data = parse_inverter_data([create_inverter_data("foobarA")])
 
         mock_envoy.get_power_data.return_value = test_sample_data
         mock_envoy.get_inverter_data.return_value = test_inverter_data
@@ -53,9 +49,7 @@ class TestInfluxdbSamplingEngine(unittest.TestCase):
         sampling_engine._collect_samples()
 
         # Collect again (now has new inverter data)
-        test_inverter_data = parse_inverter_data(
-            [create_inverter_data("foobarB")], date.today()
-        )
+        test_inverter_data = parse_inverter_data([create_inverter_data("foobarB")])
         mock_envoy.get_inverter_data.return_value = test_inverter_data
 
         sampling_engine._collect_samples()

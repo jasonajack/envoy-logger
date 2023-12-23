@@ -2,7 +2,7 @@ import logging
 import sys
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from requests import ConnectTimeout, ReadTimeout
@@ -14,7 +14,7 @@ LOG = logging.getLogger("sampling_engine")
 
 
 class SamplingEngine(ABC):
-    prev_inverter_data: Optional[Dict[str, InverterSample]] = None
+    last_sample_timestamp: Optional[datetime] = None
 
     def __init__(self, envoy: Envoy, interval_seconds: int = 5) -> None:
         self.envoy = envoy
@@ -26,7 +26,8 @@ class SamplingEngine(ABC):
 
     def wait_for_next_cycle(self) -> None:
         # Determine how long until the next sample needs to be taken
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
+
         time_to_next = self.interval_seconds - (now.timestamp() % self.interval_seconds)
 
         try:
@@ -42,6 +43,8 @@ class SamplingEngine(ABC):
             try:
                 power_data = self.get_power_data()
                 inverter_data = self.get_inverter_data()
+
+                self.last_sample_timestamp = datetime.now(tz=timezone.utc)
 
                 LOG.debug(f"Sampled power data:\n{power_data}")
                 LOG.debug(f"Sampled inverter data:\n{inverter_data}")
@@ -62,16 +65,4 @@ class SamplingEngine(ABC):
 
     def get_inverter_data(self) -> Dict[str, InverterSample]:
         inverter_data = self.envoy.get_inverter_data()
-
-        if self.prev_inverter_data is None:
-            self.prev_inverter_data = inverter_data
-            # Hard to know how stale inverter data is, so discard this sample
-            # since I have nothing to compare to yet
-            return {}
-
-        # filter out stale inverter samples
-        filtered_data = filter_new_inverter_data(inverter_data, self.prev_inverter_data)
-        LOG.debug("Got %d unique inverter measurements", len(filtered_data))
-
-        self.prev_inverter_data = inverter_data
-        return filtered_data
+        return filter_new_inverter_data(inverter_data, self.last_sample_timestamp)

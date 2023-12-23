@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Dict, Optional
 
 import requests
@@ -40,19 +40,20 @@ class Envoy:
         headers = {
             "Authorization": f"Bearer {enphase_token}",
         }
+
         response = requests.get(
             f"{self.url}/auth/check_jwt",
             headers=headers,
             verify=False,
             timeout=30,
         )
+
         response.raise_for_status()
         self.session_id = response.cookies["sessionId"]
         LOG.info("Logged into envoy. SessionID: %s", self.session_id)
 
     def get_power_data(self) -> SampleData:
         LOG.debug("Fetching power data")
-        ts = datetime.now(timezone.utc)
         cookies = {
             "sessionId": self.get_session_id(),
         }
@@ -66,29 +67,32 @@ class Envoy:
 
         response.raise_for_status()
         json_data = response.json()
-        return SampleData.create(sample_data=json_data, ts=ts)
+        return SampleData.create(sample_data=json_data)
 
     def get_inverter_data(self) -> Dict[str, InverterSample]:
         LOG.debug("Fetching inverter data")
-        ts = datetime.now(timezone.utc)
         cookies = {
             "sessionId": self.get_session_id(),
         }
+
         response = requests.get(
             f"{self.url}/api/v1/production/inverters",
             cookies=cookies,
             verify=False,
             timeout=30,
         )
+
         response.raise_for_status()
         json_data = response.json()
-        data = parse_inverter_data(json_data, ts)
+        data = parse_inverter_data(json_data)
         return data
 
     def get_inventory(self):
+        LOG.debug("Fetching inventory")
         cookies = {
             "sessionId": self.get_session_id(),
         }
+
         response = requests.get(
             f"{self.url}/inventory.json?deleted=1",
             cookies=cookies,

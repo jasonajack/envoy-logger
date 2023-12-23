@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from influxdb_client.client.flux_table import FluxRecord
@@ -18,6 +19,7 @@ def create_sample_data() -> Dict[str, Any]:
 def _create_eim_sample(measurement_type: str) -> Dict[str, Any]:
     return {
         "type": "eim",
+        "readingTime": datetime.now(tz=timezone.utc).timestamp(),
         "measurementType": measurement_type,
         "lines": [
             _create_power_sample(),

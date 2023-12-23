@@ -1,5 +1,4 @@
 import unittest
-from datetime import datetime, timezone
 from unittest import mock
 
 from requests import Response
@@ -46,9 +45,7 @@ class TestEnvoy(unittest.TestCase):
         mock_requests_get.side_effect = [mock_login_response, mock_power_data_response]
 
         sample_data = envoy.get_power_data()
-        expected_sample_data = SampleData.create(
-            sample_data=power_data, ts=datetime.now(timezone.utc)
-        )
+        expected_sample_data = SampleData.create(sample_data=power_data)
 
         self.assertEqual(
             len(sample_data.net_consumption.eim_line_samples),
@@ -86,9 +83,7 @@ class TestEnvoy(unittest.TestCase):
         ]
 
         inverter_data = envoy.get_inverter_data()
-        expected_inverter_data = parse_inverter_data(
-            test_inverter_data, datetime.now(timezone.utc)
-        )
+        expected_inverter_data = parse_inverter_data(test_inverter_data)
 
         self.assertEqual(
             len(inverter_data),
