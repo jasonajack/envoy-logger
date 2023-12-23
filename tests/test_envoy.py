@@ -1,0 +1,154 @@
+from datetime import datetime, timezone
+from typing import Any, Dict
+import unittest
+
+from unittest import mock
+
+from requests import Response
+
+from envoy_logger.envoy import Envoy
+from envoy_logger.model import SampleData, parse_inverter_data
+
+
+@mock.patch("envoy_logger.enphase_energy.EnphaseEnergy")
+@mock.patch("requests.get")
+@mock.patch("requests.post")
+class TestEnvoy(unittest.TestCase):
+    def test_get_session_id(
+        self, mock_requests_post, mock_requests_get, mock_enphase_energy
+    ):
+        envoy = Envoy(url="http://envoy.local", enphase_energy=mock_enphase_energy)
+
+        mock_enphase_energy.get_token.return_value = "foobar"
+
+        mock_login_response = mock.Mock(Response)
+        mock_login_response.cookies = {"sessionId": "foobar"}
+
+        mock_requests_get.side_effect = [mock_login_response]
+
+        session_id = envoy.get_session_id()
+
+        self.assertEqual(session_id, "foobar")
+
+    def test_get_power_data(
+        self, mock_requests_post, mock_requests_get, mock_enphase_energy
+    ):
+        envoy = Envoy(url="http://envoy.local", enphase_energy=mock_enphase_energy)
+
+        mock_enphase_energy.get_token.return_value = "foobar"
+
+        mock_login_response = mock.Mock(Response)
+        mock_login_response.cookies = {"sessionId": "foobar"}
+
+        power_data = _create_sample_data()
+        mock_power_data_response = mock.Mock(Response)
+        mock_power_data_response.json.return_value = power_data
+
+        mock_requests_get.side_effect = [mock_login_response, mock_power_data_response]
+
+        sample_data = envoy.get_power_data()
+        expected_sample_data = SampleData(power_data, datetime.now(timezone.utc))
+
+        self.assertEqual(
+            len(sample_data.net_consumption.lines),
+            len(expected_sample_data.net_consumption.lines),
+        )
+        self.assertEqual(
+            len(sample_data.total_consumption.lines),
+            len(expected_sample_data.total_consumption.lines),
+        )
+        self.assertEqual(
+            len(sample_data.total_production.lines),
+            len(expected_sample_data.total_production.lines),
+        )
+
+    def test_get_inverter_data(
+        self, mock_requests_post, mock_requests_get, mock_enphase_energy
+    ):
+        envoy = Envoy(url="http://envoy.local", enphase_energy=mock_enphase_energy)
+
+        mock_enphase_energy.get_token.return_value = "foobar"
+
+        mock_login_response = mock.Mock(Response)
+        mock_login_response.cookies = {"sessionId": "foobar"}
+
+        test_inverter_data = [
+            _create_inverter_data(),
+            _create_inverter_data(),
+        ]
+        mock_inverter_data_response = mock.Mock(Response)
+        mock_inverter_data_response.json.return_value = test_inverter_data
+
+        mock_requests_get.side_effect = [
+            mock_login_response,
+            mock_inverter_data_response,
+        ]
+
+        inverter_data = envoy.get_inverter_data()
+        expected_inverter_data = parse_inverter_data(
+            test_inverter_data, datetime.now(timezone.utc)
+        )
+
+        self.assertEqual(
+            len(inverter_data),
+            len(expected_inverter_data),
+        )
+        self.assertEqual(
+            inverter_data["foobar"].watts,
+            expected_inverter_data["foobar"].watts,
+        )
+
+
+def _create_sample_data() -> Dict[str, Any]:
+    return {
+        "consumption": [
+            _create_eim_sample("net-consumption"),
+            _create_eim_sample("total-consumption"),
+        ],
+        "production": [
+            _create_eim_sample("production"),
+        ],
+    }
+
+
+def _create_eim_sample(measurement_type: str) -> Dict[str, Any]:
+    return {
+        "type": "eim",
+        "measurementType": measurement_type,
+        "lines": [
+            _create_power_sample(),
+            _create_power_sample(),
+            _create_power_sample(),
+        ],
+    }
+
+
+def _create_power_sample() -> Dict[str, float]:
+    return {
+        "wNow": 1.23,
+        "rmsCurrent": 1.23,
+        "rmsVoltage": 1.23,
+        "reactPwr": 1.23,
+        "apprntPwr": 1.23,
+        "whToday": 1.23,
+        "vahToday": 1.23,
+        "varhLagToday": 1.23,
+        "varhLeadToday": 1.23,
+        "whLifetime": 1.23,
+        "vahLifetime": 1.23,
+        "varhLagLifetime": 1.23,
+        "varhLeadLifetime": 1.23,
+        "whLastSevenDays": 1.23,
+    }
+
+
+def _create_inverter_data() -> Dict[str, Any]:
+    return {
+        "serialNumber": "foobar",
+        "lastReportDate": 123456789,
+        "lastReportWatts": 123,
+    }
+
+
+if __name__ == "__main__":
+    unittest.main()

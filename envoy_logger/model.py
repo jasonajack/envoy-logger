@@ -1,10 +1,12 @@
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 import logging
 
-LOG = logging.getLogger("envoy")
+LOG = logging.getLogger("model")
 
 
+@dataclass
 class PowerSample:
     """
     A generic power sample
@@ -14,26 +16,26 @@ class PowerSample:
         self.ts = ts
 
         # Instantaneous measurements
-        self.wNow = data["wNow"]  # type: float
-        self.rmsCurrent = data["rmsCurrent"]  # type: float
-        self.rmsVoltage = data["rmsVoltage"]  # type: float
-        self.reactPwr = data["reactPwr"]  # type: float
-        self.apprntPwr = data["apprntPwr"]  # type: float
+        self.wNow: float = data["wNow"]
+        self.rmsCurrent: float = data["rmsCurrent"]
+        self.rmsVoltage: float = data["rmsVoltage"]
+        self.reactPwr: float = data["reactPwr"]
+        self.apprntPwr: float = data["apprntPwr"]
 
         # Historical measurements (Today)
-        self.whToday = data["whToday"]  # type: float
-        self.vahToday = data["vahToday"]  # type: float
-        self.varhLagToday = data["varhLagToday"]  # type: float
-        self.varhLeadToday = data["varhLeadToday"]  # type: float
+        self.whToday: float = data["whToday"]
+        self.vahToday: float = data["vahToday"]
+        self.varhLagToday: float = data["varhLagToday"]
+        self.varhLeadToday: float = data["varhLeadToday"]
 
         # Historical measurements (Lifetime)
-        self.whLifetime = data["whLifetime"]  # type: float
-        self.vahLifetime = data["vahLifetime"]  # type: float
-        self.varhLagLifetime = data["varhLagLifetime"]  # type: float
-        self.varhLeadLifetime = data["varhLeadLifetime"]  # type: float
+        self.whLifetime: float = data["whLifetime"]
+        self.vahLifetime: float = data["vahLifetime"]
+        self.varhLagLifetime: float = data["varhLagLifetime"]
+        self.varhLeadLifetime: float = data["varhLeadLifetime"]
 
         # Historical measurements (Other)
-        self.whLastSevenDays = data["whLastSevenDays"]  # type: float
+        self.whLastSevenDays: float = data["whLastSevenDays"]
 
     @property
     def pwrFactor(self) -> float:
@@ -43,6 +45,7 @@ class PowerSample:
         return self.wNow / self.apprntPwr
 
 
+@dataclass
 class EIMSample:
     """
     "EIM" measurement.
@@ -68,6 +71,7 @@ class EIMSample:
         )
 
 
+@dataclass
 class EIMLineSample(PowerSample):
     """
     Sample for a Single "EIM" line sensor
@@ -78,14 +82,15 @@ class EIMLineSample(PowerSample):
         super().__init__(data, parent.ts)
 
 
+@dataclass
 class SampleData:
     def __init__(self, data, ts: datetime) -> None:
         # Do not use JSON data's timestamp. Envoy's clock is wrong
         self.ts = ts
 
-        self.net_consumption = None  # type: Optional[EIMSample]
-        self.total_consumption = None  # type: Optional[EIMSample]
-        self.total_production = None  # type: Optional[EIMSample]
+        self.net_consumption: Optional[EIMSample] = None
+        self.total_consumption: Optional[EIMSample] = None
+        self.total_production: Optional[EIMSample] = None
 
         for consumption_data in data["consumption"]:
             if consumption_data["type"] == "eim":
@@ -103,14 +108,15 @@ class SampleData:
                 pass
 
 
+@dataclass
 class InverterSample:
     def __init__(self, data, ts: datetime) -> None:
         # envoy time is not particularly accurate. Use my own ts
         self.ts = ts
 
-        self.serial = data["serialNumber"]  # type: str
-        self.report_ts = data["lastReportDate"]  # type: int
-        self.watts = data["lastReportWatts"]  # type: int
+        self.serial: str = data["serialNumber"]
+        self.report_ts: int = data["lastReportDate"]
+        self.watts: int = data["lastReportWatts"]
 
 
 def parse_inverter_data(data, ts: datetime) -> Dict[str, InverterSample]:
@@ -136,7 +142,7 @@ def filter_new_inverter_data(
     Compare against a prior sample, and return a new dict of inverters samples
     that only contains the unique measurements
     """
-    unique_inverters = {}  # type: Dict[str, InverterSample]
+    unique_inverters: Dict[str, InverterSample] = {}
     for serial, inverter in new_data.items():
         if serial not in prev_data.keys():
             unique_inverters[serial] = inverter
