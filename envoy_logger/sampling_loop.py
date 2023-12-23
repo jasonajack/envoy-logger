@@ -3,10 +3,11 @@ import time
 from typing import List, Dict
 import logging
 import sys
-from requests.exceptions import ReadTimeout, ConnectTimeout
 
 from influxdb_client import WritePrecision, InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+
+from .sampling_engine import SampleEngine
 
 from .envoy import Envoy
 
@@ -17,12 +18,13 @@ from .model import (
     SampleData,
     PowerSample,
     InverterSample,
-    filter_new_inverter_data,
 )
 from .config import Config
 
+LOG = logging.getLogger("sampling_loop")
 
-class SamplingLoop:
+
+class SamplingLoop(SampleEngine):
     interval: int = 5
 
     def __init__(self, enphase_energy: EnphaseEnergy, config: Config) -> None:
@@ -43,27 +45,15 @@ class SamplingLoop:
         self.prev_inverter_data = None
 
     def run(self):
-        timeout_count = 0
         while True:
-            try:
-                data = self.get_sample()
-                inverter_data = self.get_inverter_data()
-            except (ReadTimeout, ConnectTimeout):
-                # Envoy gets REALLY MAD if you block it's access to enphaseenergy.com
-                # using a VLAN.
-                # It's software gets hung up for some reason, and some requests will stall.
-                # Allow envoy requests to timeout (and skip this sample iteration)
-                timeout_count += 1
-                logging.warning("Envoy request timed out (%d/10)", timeout_count)
-                if timeout_count >= 10:
-                    # Give up after a while
-                    raise
-                pass
-            else:
-                self.write_to_influxdb(data, inverter_data)
-                timeout_count = 0
+            self._wait_for_next_cycle()
+            LOG.debug("Collecting samples.")
 
-    def get_sample(self) -> SampleData:
+            power_data, inverter_data = self.collect_samples_with_retry()
+
+            self._write_to_influxdb(power_data, inverter_data)
+
+    def _wait_for_next_cycle(self) -> None:
         # Determine how long until the next sample needs to be taken
         now = datetime.now()
         time_to_next = self.interval - (now.timestamp() % self.interval)
@@ -74,31 +64,11 @@ class SamplingLoop:
             print("Exiting with Ctrl-C")
             sys.exit(0)
 
-        data = self.envoy.get_power_data()
-
-        return data
-
-    def get_inverter_data(self) -> Dict[str, InverterSample]:
-        data = self.envoy.get_inverter_data()
-
-        if self.prev_inverter_data is None:
-            self.prev_inverter_data = data
-            # Hard to know how stale inverter data is, so discard this sample
-            # since I have nothing to compare to yet
-            return {}
-
-        # filter out stale inverter samples
-        filtered_data = filter_new_inverter_data(data, self.prev_inverter_data)
-        if filtered_data:
-            logging.debug("Got %d unique inverter measurements", len(filtered_data))
-        self.prev_inverter_data = data
-        return filtered_data
-
-    def write_to_influxdb(
+    def _write_to_influxdb(
         self, data: SampleData, inverter_data: Dict[str, InverterSample]
     ) -> None:
-        hr_points = self.get_high_rate_points(data, inverter_data)
-        lr_points = self.low_rate_points(data)
+        hr_points = self._get_high_rate_points(data, inverter_data)
+        lr_points = self._low_rate_points(data)
         self.influxdb_write_api.write(
             bucket=self.config.influxdb_bucket_hr, record=hr_points
         )
@@ -107,27 +77,27 @@ class SamplingLoop:
                 bucket=self.config.influxdb_bucket_lr, record=lr_points
             )
 
-    def get_high_rate_points(
+    def _get_high_rate_points(
         self, data: SampleData, inverter_data: Dict[str, InverterSample]
     ) -> List[Point]:
         points = []
         for i, line in enumerate(data.total_consumption.lines):
-            p = self.idb_point_from_line("consumption", i, line)
+            p = self._idb_point_from_line("consumption", i, line)
             points.append(p)
         for i, line in enumerate(data.total_production.lines):
-            p = self.idb_point_from_line("production", i, line)
+            p = self._idb_point_from_line("production", i, line)
             points.append(p)
         for i, line in enumerate(data.net_consumption.lines):
-            p = self.idb_point_from_line("net", i, line)
+            p = self._idb_point_from_line("net", i, line)
             points.append(p)
 
         for inverter in inverter_data.values():
-            p = self.point_from_inverter(inverter)
+            p = self._point_from_inverter(inverter)
             points.append(p)
 
         return points
 
-    def idb_point_from_line(
+    def _idb_point_from_line(
         self, measurement_type: str, idx: int, data: PowerSample
     ) -> Point:
         p = Point(f"{measurement_type}-line{idx}")
@@ -145,7 +115,7 @@ class SamplingLoop:
 
         return p
 
-    def point_from_inverter(self, inverter: InverterSample) -> Point:
+    def _point_from_inverter(self, inverter: InverterSample) -> Point:
         p = Point(f"inverter-production-{inverter.serial}")
         p.time(inverter.ts, WritePrecision.S)
         p.tag("source", self.config.source_tag)
@@ -157,7 +127,7 @@ class SamplingLoop:
 
         return p
 
-    def low_rate_points(self, data: SampleData) -> List[Point]:
+    def _low_rate_points(self, data: SampleData) -> List[Point]:
         # First check if the day rolled over
         new_date = date.today()
         if self.todays_date == new_date:
@@ -168,11 +138,11 @@ class SamplingLoop:
         self.todays_date = new_date
 
         # Collect points that summarize prior day
-        points = self.compute_daily_Wh_points(data.ts)
+        points = self._compute_daily_Wh_points(data.ts)
 
         return points
 
-    def compute_daily_Wh_points(self, ts: datetime) -> List[Point]:
+    def _compute_daily_Wh_points(self, ts: datetime) -> List[Point]:
         # Not using integral(interpolate:"linear") since it does not do what you
         # think it would mean. Without the "interoplation" arg, it still does
         # linear interpolation correctly.
