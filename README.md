@@ -98,7 +98,7 @@ Run in your container service of choice or manually:
 docker compose up -d
 ```
 
-## 3. Set up Grafana
+## Set up Grafana
 
 Grafana is the front-end visualization tool where you can design dashboards to display your data. When you view a dashboard, Grafana pulls data from the InfluxDB database to display it.
 
