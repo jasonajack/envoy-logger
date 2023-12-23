@@ -32,6 +32,12 @@ influxdb:
   bucket_lr: envoy_low_rate
   # bucket: envoy_all_data
 
+# How to access Prometheus
+prometheus:
+  # Change this to an open port on the host that is running envoy-logger
+  # Then configure a scraper in prometheus.yml with the hostname and port of the host running envoy-logger
+  listening_port: 1234
+
 # Since the Envoy only tracks panel-level inverter production by serial number,
 # it can be useful to provide InfluxDB measurements with additional tags that
 # further describe your panels. This is completely optional, but can be useful

@@ -1,6 +1,7 @@
 import logging
 import os
 from argparse import ArgumentParser, FileType, Namespace
+from typing import List, Optional
 
 from .config import load_config
 from .enphase_energy import EnphaseEnergy
@@ -13,12 +14,12 @@ logging.basicConfig(
 )
 
 
-def parse_args() -> Namespace:
+def parse_args(argv: Optional[List[str]] = None) -> Namespace:
     parser = ArgumentParser()
 
     parser.add_argument(
         "--config",
-        type=FileType('r'),
+        type=FileType("r"),
         default=os.environ.get("ENVOY_LOGGER_CFG_PATH", "/etc/envoy-logger/config.yml"),
         help="Path to the configuration file.",
     )
@@ -31,13 +32,13 @@ def parse_args() -> Namespace:
         help="The database backend to use.",
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: Optional[List[str]] = None) -> None:
+    args = parse_args(argv)
 
-    config = load_config(args.config.name)
+    config = load_config(path=args.config.name, database=args.db)
 
     enphase_energy = EnphaseEnergy(
         email=config.enphase_email,
@@ -47,10 +48,10 @@ def main() -> None:
 
     envoy = Envoy(url=config.envoy_url, enphase_energy=enphase_energy)
 
-    if args.db == 'influxdb':
+    if args.db == "influxdb":
         sampling_loop = InfluxdbSamplingEngine(envoy=envoy, config=config)
         sampling_loop.run()
-    elif args.db == 'prometheus':
+    elif args.db == "prometheus":
         raise NotImplementedError(f"Database backend not yet implemented: {args.db}")
     else:
         raise NotImplementedError(f"Database backend not yet implemented: {args.db}")

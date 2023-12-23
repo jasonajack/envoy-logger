@@ -93,7 +93,21 @@ volumes:
   prometheus-data:
 ```
 
-TODO
+Unlike InfluxDB where the logger pushes data to the database, when configured for `prometheus` it listens on a port and the Prometheus database pulls data from the logger instead. You will need to make sure that wherever you are running your Prometheus database has connectivity to whatever server you are hosting the logger on, specifically on the port you define in your `config.yml`.
+
+You will need to update your `prometheus.yml` configuration to add a new scraper:
+
+```yaml
+scrape_configs:
+  - job_name: envoy-logger
+    static_configs:
+      - targets:
+          - envoy_logger_hostname:1234
+        labels:
+          instance: envoy-logger
+```
+
+Update the target and change `envoy_logger_hostname:1234` to point to the server you are running the `envoy-logger` container and the port that it is listening on. Prometheus will periodically pull data (based on your configuration in `prometheus.yml`) from your logger.
 
 ## Build config.yml
 
@@ -103,7 +117,7 @@ Locally test that the logging script can read from your Envoy, and push data to 
 
 ```bash
 ./install_python_deps.sh
-./launcher.sh --config /path/to/your/config.yml
+./launcher.sh --config /path/to/your/config.yml --db influxdb|prometheus
 ```
 
 If you've configured everything correctly you should see logs indicating authentication succeeded with both your Envoy and your database, and no error messages from the script. Login to your database server and start exploring the data using their "Data Explorer" tool. If it's working properly, you should start seeing the data flow in. I recommend that you poke around and get familiar with how the data is structured, since it will help you build queries for your dashboard later.
