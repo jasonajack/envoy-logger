@@ -36,8 +36,9 @@ class TestInfluxdbSamplingEngine(unittest.TestCase):
         mock_config.source_tag = "envoy"
         mock_config.inverters = {"foo": {}, "bar": {}}
 
-        # We use yesterday's date here to cover the low-rate data collection as well
-        test_sample_data = SampleData(create_sample_data(), date.today())
+        test_sample_data = SampleData.create(
+            sample_data=create_sample_data(), ts=date.today()
+        )
         test_inverter_data = parse_inverter_data(
             [create_inverter_data("foobarA")], date.today()
         )

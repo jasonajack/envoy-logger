@@ -46,19 +46,21 @@ class TestEnvoy(unittest.TestCase):
         mock_requests_get.side_effect = [mock_login_response, mock_power_data_response]
 
         sample_data = envoy.get_power_data()
-        expected_sample_data = SampleData(power_data, datetime.now(timezone.utc))
+        expected_sample_data = SampleData.create(
+            sample_data=power_data, ts=datetime.now(timezone.utc)
+        )
 
         self.assertEqual(
-            len(sample_data.net_consumption.lines),
-            len(expected_sample_data.net_consumption.lines),
+            len(sample_data.net_consumption.eim_line_samples),
+            len(expected_sample_data.net_consumption.eim_line_samples),
         )
         self.assertEqual(
-            len(sample_data.total_consumption.lines),
-            len(expected_sample_data.total_consumption.lines),
+            len(sample_data.total_consumption.eim_line_samples),
+            len(expected_sample_data.total_consumption.eim_line_samples),
         )
         self.assertEqual(
-            len(sample_data.total_production.lines),
-            len(expected_sample_data.total_production.lines),
+            len(sample_data.total_production.eim_line_samples),
+            len(expected_sample_data.total_production.eim_line_samples),
         )
 
     def test_get_inverter_data(

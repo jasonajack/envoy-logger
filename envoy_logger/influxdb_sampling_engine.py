@@ -1,23 +1,21 @@
 import logging
-import sys
-import time
 from datetime import date, datetime
 from typing import Dict, List
 
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-from .config import Config
-from .envoy import Envoy
-from .model import InverterSample, PowerSample, SampleData
-from .sampling_engine import SamplingEngine
+from envoy_logger.config import Config
+from envoy_logger.envoy import Envoy
+from envoy_logger.model import InverterSample, PowerSample, SampleData
+from envoy_logger.sampling_engine import SamplingEngine
 
 LOG = logging.getLogger("influxdb_sampling_engine")
 
 
 class InfluxdbSamplingEngine(SamplingEngine):
     def __init__(self, envoy: Envoy, config: Config, interval_seconds: int = 5) -> None:
-        super().__init__(envoy=envoy)
+        super().__init__(envoy=envoy, interval_seconds=interval_seconds)
 
         self.config = config
 
@@ -32,36 +30,21 @@ class InfluxdbSamplingEngine(SamplingEngine):
 
         # Used to track the transition to the next day for daily measurements
         self.todays_date = date.today()
-        self.interval_seconds = interval_seconds
 
-    def run(self):
+    def run(self) -> None:
         while True:
+            self.wait_for_next_cycle()
             self._collect_samples()
 
     def _collect_samples(self) -> None:
-        self._wait_for_next_cycle()
-        LOG.debug("Collecting samples.")
-
         power_data, inverter_data = self.collect_samples_with_retry()
-
         self._write_to_influxdb(power_data, inverter_data)
 
-    def _wait_for_next_cycle(self) -> None:
-        # Determine how long until the next sample needs to be taken
-        now = datetime.now()
-        time_to_next = self.interval_seconds - (now.timestamp() % self.interval_seconds)
-
-        try:
-            time.sleep(time_to_next)
-        except KeyboardInterrupt:
-            print("Exiting with Ctrl-C")
-            sys.exit(0)
-
     def _write_to_influxdb(
-        self, data: SampleData, inverter_data: Dict[str, InverterSample]
+        self, sample_data: SampleData, inverter_data: Dict[str, InverterSample]
     ) -> None:
-        hr_points = self._get_high_rate_points(data, inverter_data)
-        lr_points = self._low_rate_points(data)
+        hr_points = self._get_high_rate_points(sample_data, inverter_data)
+        lr_points = self._low_rate_points(sample_data)
         self.influxdb_write_api.write(
             bucket=self.config.influxdb_bucket_hr, record=hr_points
         )
@@ -71,17 +54,23 @@ class InfluxdbSamplingEngine(SamplingEngine):
             )
 
     def _get_high_rate_points(
-        self, data: SampleData, inverter_data: Dict[str, InverterSample]
+        self, sample_data: SampleData, inverter_data: Dict[str, InverterSample]
     ) -> List[Point]:
         points = []
-        for i, line in enumerate(data.total_consumption.lines):
-            p = self._idb_point_from_line("consumption", i, line)
+        for line_index, line_sample in enumerate(
+            sample_data.total_consumption.eim_line_samples
+        ):
+            p = self._idb_point_from_line("consumption", line_index, line_sample)
             points.append(p)
-        for i, line in enumerate(data.total_production.lines):
-            p = self._idb_point_from_line("production", i, line)
+        for line_index, line_sample in enumerate(
+            sample_data.total_production.eim_line_samples
+        ):
+            p = self._idb_point_from_line("production", line_index, line_sample)
             points.append(p)
-        for i, line in enumerate(data.net_consumption.lines):
-            p = self._idb_point_from_line("net", i, line)
+        for line_index, line_sample in enumerate(
+            sample_data.net_consumption.eim_line_samples
+        ):
+            p = self._idb_point_from_line("net", line_index, line_sample)
             points.append(p)
 
         for inverter in inverter_data.values():
@@ -120,7 +109,7 @@ class InfluxdbSamplingEngine(SamplingEngine):
 
         return p
 
-    def _low_rate_points(self, data: SampleData) -> List[Point]:
+    def _low_rate_points(self, sample_data: SampleData) -> List[Point]:
         # First check if the day rolled over
         new_date = date.today()
         if self.todays_date == new_date:
@@ -131,7 +120,7 @@ class InfluxdbSamplingEngine(SamplingEngine):
         self.todays_date = new_date
 
         # Collect points that summarize prior day
-        points = self._compute_daily_Wh_points(data.ts)
+        points = self._compute_daily_Wh_points(sample_data.ts)
 
         return points
 
@@ -150,6 +139,7 @@ class InfluxdbSamplingEngine(SamplingEngine):
             |> yield(name: "total")
         """
         result = self.influxdb_query_api.query(query=query)
+
         unreported_inverters = set(self.config.inverters.keys())
         points = []
         for table in result:

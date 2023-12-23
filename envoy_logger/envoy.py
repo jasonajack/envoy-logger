@@ -6,8 +6,8 @@ from typing import Dict, Optional
 import requests
 import urllib3
 
-from .enphase_energy import EnphaseEnergy
-from .model import InverterSample, SampleData, parse_inverter_data
+from envoy_logger.enphase_energy import EnphaseEnergy
+from envoy_logger.model import InverterSample, SampleData, parse_inverter_data
 
 # Local envoy access uses self-signed certificate. Ignore the warning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -66,7 +66,7 @@ class Envoy:
 
         response.raise_for_status()
         json_data = response.json()
-        return SampleData(json_data, ts)
+        return SampleData.create(sample_data=json_data, ts=ts)
 
     def get_inverter_data(self) -> Dict[str, InverterSample]:
         LOG.debug("Fetching inverter data")

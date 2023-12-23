@@ -3,10 +3,11 @@ import os
 from argparse import ArgumentParser, FileType, Namespace
 from typing import List, Optional
 
-from .config import load_config
-from .enphase_energy import EnphaseEnergy
-from .envoy import Envoy
-from .influxdb_sampling_engine import InfluxdbSamplingEngine
+from envoy_logger.config import load_config
+from envoy_logger.enphase_energy import EnphaseEnergy
+from envoy_logger.envoy import Envoy
+from envoy_logger.influxdb_sampling_engine import InfluxdbSamplingEngine
+from envoy_logger.prometheus_sampling_engine import PrometheusSamplingEngine
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -53,9 +54,8 @@ def main(argv: Optional[List[str]] = None) -> None:
             sampling_loop = InfluxdbSamplingEngine(envoy=envoy, config=config)
             sampling_loop.run()
         case "prometheus":
-            raise NotImplementedError(
-                f"Database backend not yet implemented: {args.db}"
-            )
+            sampling_loop = PrometheusSamplingEngine(envoy=envoy, config=config)
+            sampling_loop.run()
         case _:
             raise NotImplementedError(
                 f"Database backend not yet implemented: {args.db}"

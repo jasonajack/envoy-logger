@@ -7,6 +7,11 @@ from envoy_logger.model import InverterSample, SampleData
 from envoy_logger.sampling_engine import SamplingEngine
 
 
+class SamplingEngineChildClass(SamplingEngine):
+    def run(self) -> None:
+        raise NotImplementedError("Not implemented")
+
+
 @mock.patch("envoy_logger.envoy.Envoy")
 class TestSamplingEngine(unittest.TestCase):
     def test_collect_samples_with_retry(self, mock_envoy):
@@ -18,7 +23,7 @@ class TestSamplingEngine(unittest.TestCase):
         mock_envoy.get_power_data.return_value = mock_sample_data
         mock_envoy.get_inverter_data.return_value = mock_inverter_data
 
-        sampling_engine = SamplingEngine(envoy=mock_envoy)
+        sampling_engine = SamplingEngineChildClass(envoy=mock_envoy)
 
         # Grab first sample; inverter_data will be empty here because it only returns on the second scan from start
         sample_data, inverter_data = sampling_engine.collect_samples_with_retry()
@@ -52,7 +57,7 @@ class TestSamplingEngine(unittest.TestCase):
             side_effect=ConnectTimeout("foobar")
         )
 
-        sampling_engine = SamplingEngine(envoy=mock_envoy)
+        sampling_engine = SamplingEngineChildClass(envoy=mock_envoy)
 
         with self.assertRaises(TimeoutError) as ex:
             sampling_engine.collect_samples_with_retry(retries=3, wait_seconds=0.1)

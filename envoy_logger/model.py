@@ -1,41 +1,70 @@
-import logging
-from dataclasses import dataclass
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Dict, Optional
-
-LOG = logging.getLogger("model")
+from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(frozen=True)
 class PowerSample:
     """
     A generic power sample
     """
 
-    def __init__(self, data, ts: datetime) -> None:
-        self.ts = ts
+    ts: datetime
 
-        # Instantaneous measurements
-        self.wNow: float = data["wNow"]
-        self.rmsCurrent: float = data["rmsCurrent"]
-        self.rmsVoltage: float = data["rmsVoltage"]
-        self.reactPwr: float = data["reactPwr"]
-        self.apprntPwr: float = data["apprntPwr"]
+    # Instantaneous measurements
+    wNow: float
+    rmsCurrent: float
+    rmsVoltage: float
+    reactPwr: float
+    apprntPwr: float
 
-        # Historical measurements (Today)
-        self.whToday: float = data["whToday"]
-        self.vahToday: float = data["vahToday"]
-        self.varhLagToday: float = data["varhLagToday"]
-        self.varhLeadToday: float = data["varhLeadToday"]
+    # Historical measurements (Today)
+    whToday: float
+    vahToday: float
+    varhLagToday: float
+    varhLeadToday: float
 
-        # Historical measurements (Lifetime)
-        self.whLifetime: float = data["whLifetime"]
-        self.vahLifetime: float = data["vahLifetime"]
-        self.varhLagLifetime: float = data["varhLagLifetime"]
-        self.varhLeadLifetime: float = data["varhLeadLifetime"]
+    # Historical measurements (Lifetime)
+    whLifetime: float
+    vahLifetime: float
+    varhLagLifetime: float
+    varhLeadLifetime: float
 
-        # Historical measurements (Other)
-        self.whLastSevenDays: float = data["whLastSevenDays"]
+    # Historical measurements (Other)
+    whLastSevenDays: float
+
+    @staticmethod
+    def create(power_data: Dict[str, float], ts: datetime) -> PowerSample:
+        return PowerSample(
+            ts=ts,
+            # Instantaneous measurements
+            wNow=power_data["wNow"],
+            rmsCurrent=power_data["rmsCurrent"],
+            rmsVoltage=power_data["rmsVoltage"],
+            reactPwr=power_data["reactPwr"],
+            apprntPwr=power_data["apprntPwr"],
+            # Historical measurements (Today)
+            whToday=power_data["whToday"],
+            vahToday=power_data["vahToday"],
+            varhLagToday=power_data["varhLagToday"],
+            varhLeadToday=power_data["varhLeadToday"],
+            # Historical measurements (Lifetime)
+            whLifetime=power_data["whLifetime"],
+            vahLifetime=power_data["vahLifetime"],
+            varhLagLifetime=power_data["varhLagLifetime"],
+            varhLeadLifetime=power_data["varhLeadLifetime"],
+            # Historical measurements (Other)
+            whLastSevenDays=power_data["whLastSevenDays"],
+        )
+
+    def __str__(self) -> str:
+        return json.dumps(asdict(self), indent=1, default=str)
+
+    def asdict(self) -> Dict[str, Any]:
+        return asdict(self)
 
     @property
     def pwrFactor(self) -> float:
@@ -45,7 +74,46 @@ class PowerSample:
         return self.wNow / self.apprntPwr
 
 
-@dataclass
+@dataclass(frozen=True)
+class SampleData:
+    ts: datetime
+    net_consumption: Optional[EIMSample]
+    total_consumption: Optional[EIMSample]
+    total_production: Optional[EIMSample]
+
+    @staticmethod
+    def create(sample_data: Dict[str, Any], ts: datetime) -> SampleData:
+        net_consumption: Optional[EIMSample]
+        total_consumption: Optional[EIMSample]
+        total_production: Optional[EIMSample]
+
+        for consumption_data in sample_data["consumption"]:
+            if consumption_data["type"] == "eim":
+                if consumption_data["measurementType"] == "net-consumption":
+                    net_consumption = EIMSample.create(consumption_data, ts)
+                elif consumption_data["measurementType"] == "total-consumption":
+                    total_consumption = EIMSample.create(consumption_data, ts)
+
+        for production_data in sample_data["production"]:
+            if production_data["type"] == "eim":
+                if production_data["measurementType"] == "production":
+                    total_production = EIMSample.create(production_data, ts)
+            elif production_data["type"] == "inverters":
+                # TODO: Parse this data too
+                pass
+
+        return SampleData(
+            ts=ts,
+            net_consumption=net_consumption,
+            total_consumption=total_consumption,
+            total_production=total_production,
+        )
+
+    def __str__(self) -> str:
+        return json.dumps(asdict(self), indent=1, default=str)
+
+
+@dataclass(frozen=True)
 class EIMSample:
     """
     "EIM" measurement.
@@ -55,68 +123,45 @@ class EIMSample:
     Better to recalculate the values locally
     """
 
-    def __init__(self, data, ts: datetime) -> None:
-        assert data["type"] == "eim"
+    ts: datetime
+    eim_line_samples: List[PowerSample]
 
-        # Do not use JSON data's timestamp. Envoy's clock is wrong
-        self.ts = ts
+    @staticmethod
+    def create(line_data: Dict[str, Any], ts: datetime) -> EIMSample:
+        assert line_data["type"] == "eim"
 
-        self.lines = []
-        for line_data in data["lines"]:
-            line = EIMLineSample(self, line_data)
-            self.lines.append(line)
+        eim_line_samples = [
+            PowerSample.create(power_data=power_data, ts=ts)
+            for power_data in line_data["lines"]
+        ]
 
-        LOG.debug(
-            f"Sampled {len(self.lines)} power lines of type: {data['measurementType']}"
+        return EIMSample(
+            ts=ts,
+            eim_line_samples=eim_line_samples,
         )
 
-
-@dataclass
-class EIMLineSample(PowerSample):
-    """
-    Sample for a Single "EIM" line sensor
-    """
-
-    def __init__(self, parent: EIMSample, data) -> None:
-        self.parent = parent
-        super().__init__(data, parent.ts)
+    def __str__(self) -> str:
+        return json.dumps(asdict(self), indent=1, default=str)
 
 
-@dataclass
-class SampleData:
-    def __init__(self, data, ts: datetime) -> None:
-        # Do not use JSON data's timestamp. Envoy's clock is wrong
-        self.ts = ts
-
-        self.net_consumption: Optional[EIMSample] = None
-        self.total_consumption: Optional[EIMSample] = None
-        self.total_production: Optional[EIMSample] = None
-
-        for consumption_data in data["consumption"]:
-            if consumption_data["type"] == "eim":
-                if consumption_data["measurementType"] == "net-consumption":
-                    self.net_consumption = EIMSample(consumption_data, self.ts)
-                if consumption_data["measurementType"] == "total-consumption":
-                    self.total_consumption = EIMSample(consumption_data, self.ts)
-
-        for production_data in data["production"]:
-            if production_data["type"] == "eim":
-                if production_data["measurementType"] == "production":
-                    self.total_production = EIMSample(production_data, self.ts)
-            if production_data["type"] == "inverters":
-                # TODO: Parse this data too
-                pass
-
-
-@dataclass
+@dataclass(frozen=True)
 class InverterSample:
-    def __init__(self, data, ts: datetime) -> None:
-        # envoy time is not particularly accurate. Use my own ts
-        self.ts = ts
+    ts: datetime
+    serial: str
+    report_ts: int
+    watts: int
 
-        self.serial: str = data["serialNumber"]
-        self.report_ts: int = data["lastReportDate"]
-        self.watts: int = data["lastReportWatts"]
+    @staticmethod
+    def create(inverter_data: Dict[str, Any], ts: datetime) -> InverterSample:
+        return InverterSample(
+            ts=ts,
+            serial=inverter_data["serialNumber"],
+            report_ts=inverter_data["lastReportDate"],
+            watts=inverter_data["lastReportWatts"],
+        )
+
+    def __str__(self) -> str:
+        return json.dumps(asdict(self), indent=1, default=str)
 
 
 def parse_inverter_data(data, ts: datetime) -> Dict[str, InverterSample]:
@@ -127,7 +172,7 @@ def parse_inverter_data(data, ts: datetime) -> Dict[str, InverterSample]:
     inverters = {}
 
     for inverter_data in data:
-        inverter = InverterSample(inverter_data, ts)
+        inverter = InverterSample.create(inverter_data, ts)
         inverters[inverter.serial] = inverter
 
     return inverters
