@@ -31,7 +31,7 @@ Dashboard Daily Totals:
 
 This is where your time-series data gets stored. The logging script featured in this repository writes into this database, and the Grafana front-end reads from it.
 
-You can pull the InfluxDB docker image from here: https://hub.docker.com/\_/influxdb/
+You can pull the InfluxDB docker image from here: [influxdb](https://hub.docker.com/_/influxdb/)
 
 An example compose:
 
