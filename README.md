@@ -6,7 +6,7 @@
 
 **This is a fork of https://github.com/amykyta3/envoy-logger**
 
-Log your solar production locally and feed it into an InfluxDB time-series database.
+Log your solar production locally and feed it into an InfluxDB or Prometheus time-series database.
 
 This Python-based logging application handles the following:
 
@@ -17,7 +17,7 @@ This Python-based logging application handles the following:
   - Per-phase voltage, phase angle, etc.
   - Per-panel production
 
-Once in InfluxDB, you can display the data on a Grafana dashboard.
+Once in the database, you can display the data on a Grafana dashboard.
 
 ## Screenshots
 
@@ -27,9 +27,16 @@ Dashboard Live:
 Dashboard Daily Totals:
 ![daily](docs/dashboard-daily-totals.png)
 
-## InfluxDB
+## Configure your database
+
+Envoy data is written to a time-series database. This logger currently supports the following databases:
+
+- InfluxDb
+- Prometheus
 
 This is where your time-series data gets stored. The logging script featured in this repository writes into this database, and the Grafana front-end reads from it.
+
+### InfluxDB
 
 You can pull the InfluxDB docker image from here: [influxdb](https://hub.docker.com/_/influxdb/)
 
@@ -46,7 +53,7 @@ services:
       - influxdb-data:/var/lib/influxdb2
       - influxdb-config:/etc/influxdb2
     ports:
-      - 1086:8086
+      - 8086:8086
     restart: unless-stopped
 
 volumes:
@@ -61,18 +68,45 @@ Once running, log in and configure your organization. Configure two buckets:
 
 Create an access token for the logging script so that it is able to read/write the database. Optionally you may create an additional, separate read-only access token for Grafana to read from the database or simply reuse the read/write access token.
 
+### Prometheus
+
+You can pull the Prometheus docker image from here: [prom/prometheus](https://hub.docker.com/r/prom/prometheus/)
+
+An example compose:
+
+```yaml
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - prometheus-config:/etc/prometheus
+      - prometheus-data:/prometheus
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+
+volumes:
+  prometheus-config:
+  prometheus-data:
+```
+
+TODO
+
 ## Build config.yml
 
-Create a config file that describes your Envoy, how to connect to InfluxDB, and a few other things. Use this example file as a starting point: [/docs/config.yml](/docs/config.yml)
+Create a config file that describes your Envoy, how to connect to your database, and a few other things. Use this example file as a starting point: [/docs/config.yml](/docs/config.yml)
 
-Locally test that the logging script can read from your Envoy, and push data to InfluxDB:
+Locally test that the logging script can read from your Envoy, and push data to your database:
 
 ```bash
 ./install_python_deps.sh
 ./launcher.sh --config /path/to/your/config.yml
 ```
 
-If you've configured everything correctly you should see logs indicating authentication succeeded with both your Envoy and InfluxDB, and no error messages from the script. Login to your InfluxDB server and start exploring the data using their "Data Explorer" tool. If it's working properly, you should start seeing the data flow in. I recommend that you poke around and get familiar with how the data is structured, since it will help you build queries for your dashboard later.
+If you've configured everything correctly you should see logs indicating authentication succeeded with both your Envoy and your database, and no error messages from the script. Login to your database server and start exploring the data using their "Data Explorer" tool. If it's working properly, you should start seeing the data flow in. I recommend that you poke around and get familiar with how the data is structured, since it will help you build queries for your dashboard later.
 
 ## Docker-compose
 
@@ -104,11 +138,11 @@ docker compose up -d
 
 ## Set up Grafana
 
-Grafana is the front-end visualization tool where you can design dashboards to display your data. When you view a dashboard, Grafana pulls data from the InfluxDB database to display it.
+Grafana is the front-end visualization tool where you can design dashboards to display your data. When you view a dashboard, Grafana pulls data from the database to display it.
 
 Follow the guide here to setup Grafana: https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/
 
-Once configured, add a connection to InfluxDB using the authentication token created earlier.
+Once configured, add a connection to your database using the authentication token created earlier.
 
 Start building dashboards from your data! You will need to define some Flux queries to tell Grafana what data to fetch and how to organize it.
 
