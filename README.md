@@ -161,6 +161,27 @@ Follow the guide here to setup Grafana: https://grafana.com/docs/grafana/latest/
 
 Once configured, add a connection to your database using the authentication token created earlier.
 
-Start building dashboards from your data! You will need to define some Flux queries to tell Grafana what data to fetch and how to organize it.
+Start building dashboards from your data!
+
+### InfluxDB
+
+You will need to define some Flux queries to tell Grafana what data to fetch and how to organize it.
 
 I have shared the queries I use as a reference: [/docs/flux_queries](/docs/flux_queries)
+
+### Prometheus
+
+You will need to configure your time series plots to combine lines as applicable.
+
+For combined consumption, here is an example query that can yield total power consumption readings:
+![daily](docs/prometheus_total_consumption_true_power_combined.png)
+
+Look for the following metrics:
+- envoy_net_consumption_line0_true_power
+- envoy_net_consumption_line1_true_power
+- envoy_total_consumption_line0_true_power
+- envoy_total_consumption_line1_true_power
+- envoy_total_production_line0_true_power
+- envoy_total_production_line1_true_power
+
+These metrics track the power consumed and produced by your solar system. Take some time to explore some of the other metrics available to understand what you can report back to your dashboard.
