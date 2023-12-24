@@ -177,6 +177,7 @@ For combined consumption, here is an example query that can yield total power co
 ![daily](docs/prometheus_total_consumption_true_power_combined.png)
 
 Look for the following metrics:
+
 - envoy_net_consumption_line0_true_power
 - envoy_net_consumption_line1_true_power
 - envoy_total_consumption_line0_true_power
