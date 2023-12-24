@@ -185,7 +185,7 @@ def filter_new_inverter_data(
     """
     filtered_inverter_data: Dict[str, InverterSample] = {}
     for serial, inverter_sample in inverter_data.items():
-        if not last_sample_timestamp or inverter_sample.ts > last_sample_timestamp:
+        if last_sample_timestamp and inverter_sample.ts > last_sample_timestamp:
             filtered_inverter_data[serial] = inverter_sample
 
     return filtered_inverter_data
