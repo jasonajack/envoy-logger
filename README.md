@@ -137,6 +137,9 @@ services:
       #ENVOY_LOGGER_CFG_PATH: /etc/envoy_logger/config.yml
       #ENVOY_LOGGER_DB: influxdb
       #ENVOY_LOGGER_DB: prometheus
+    # Only needed if using prometheus
+    #ports:
+    #  - 1234:1234
     volumes:
       - /path/to/config.yml:/etc/envoy_logger/config.yml
       - /etc/localtime:/etc/localtime:ro

@@ -51,7 +51,7 @@ def _create_power_sample() -> Dict[str, float]:
 def create_inverter_data(serial_number: str = "foobar") -> Dict[str, Any]:
     return {
         "serialNumber": serial_number,
-        "lastReportDate": 123456789,
+        "lastReportDate": datetime.now(tz=timezone.utc).timestamp(),
         "lastReportWatts": 123,
     }
 

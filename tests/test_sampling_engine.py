@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 from unittest import mock
 
 from requests import ConnectTimeout
@@ -25,12 +26,18 @@ class TestSamplingEngine(unittest.TestCase):
 
         sampling_engine = SamplingEngineChildClass(envoy=mock_envoy)
 
+        # Call the first time, but the inverter data will be empty because it is skipped
         sample_data, inverter_data = sampling_engine.collect_samples_with_retry()
 
         self.assertEqual(
             sample_data,
             mock_sample_data,
         )
+
+        # Call a second time to get the inverter data
+        mock_inverter_sample.ts = datetime.now(tz=timezone.utc)
+        sample_data, inverter_data = sampling_engine.collect_samples_with_retry()
+
         self.assertEqual(
             inverter_data,
             mock_inverter_data,
