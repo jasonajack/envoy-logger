@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+LOG = logging.getLogger("sampling_engine")
 
 
 @dataclass(frozen=True)
@@ -82,9 +85,11 @@ class SampleData:
 
     @staticmethod
     def create(sample_data: Dict[str, Any]) -> SampleData:
-        net_consumption: Optional[EIMSample]
-        total_consumption: Optional[EIMSample]
-        total_production: Optional[EIMSample]
+        net_consumption: Optional[EIMSample] = EIMSample.create()
+        total_consumption: Optional[EIMSample] = EIMSample.create()
+        total_production: Optional[EIMSample] = EIMSample.create()
+
+        LOG.debug(f"Creating sample data from: {json.dumps(sample_data, indent=2)}")
 
         if "consumption" in sample_data:
             for consumption_data in sample_data["consumption"]:
@@ -93,9 +98,6 @@ class SampleData:
                         net_consumption = EIMSample.create(consumption_data)
                     elif consumption_data["measurementType"] == "total-consumption":
                         total_consumption = EIMSample.create(consumption_data)
-        else:
-            net_consumption = EIMSample.create()
-            total_consumption = EIMSample.create()
 
         if "production" in sample_data:
             for production_data in sample_data["production"]:
@@ -105,8 +107,6 @@ class SampleData:
                 elif production_data["type"] == "inverters":
                     # TODO: Parse this data too
                     pass
-        else:
-            total_production = EIMSample.create()
 
         return SampleData(
             net_consumption=net_consumption,
