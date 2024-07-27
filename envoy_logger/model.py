@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-LOG = logging.getLogger("sampling_engine")
+LOG = logging.getLogger("model")
 
 
 @dataclass(frozen=True)
