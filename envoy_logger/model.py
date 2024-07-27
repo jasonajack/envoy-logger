@@ -105,6 +105,8 @@ class SampleData:
                 elif production_data["type"] == "inverters":
                     # TODO: Parse this data too
                     pass
+        else:
+            total_production = EIMSample.create()
 
         return SampleData(
             net_consumption=net_consumption,
