@@ -86,20 +86,25 @@ class SampleData:
         total_consumption: Optional[EIMSample]
         total_production: Optional[EIMSample]
 
-        for consumption_data in sample_data["consumption"]:
-            if consumption_data["type"] == "eim":
-                if consumption_data["measurementType"] == "net-consumption":
-                    net_consumption = EIMSample.create(consumption_data)
-                elif consumption_data["measurementType"] == "total-consumption":
-                    total_consumption = EIMSample.create(consumption_data)
+        if "consumption" in sample_data:
+            for consumption_data in sample_data["consumption"]:
+                if consumption_data["type"] == "eim":
+                    if consumption_data["measurementType"] == "net-consumption":
+                        net_consumption = EIMSample.create(consumption_data)
+                    elif consumption_data["measurementType"] == "total-consumption":
+                        total_consumption = EIMSample.create(consumption_data)
+        else:
+            net_consumption = EIMSample.create()
+            total_consumption = EIMSample.create()
 
-        for production_data in sample_data["production"]:
-            if production_data["type"] == "eim":
-                if production_data["measurementType"] == "production":
-                    total_production = EIMSample.create(production_data)
-            elif production_data["type"] == "inverters":
-                # TODO: Parse this data too
-                pass
+        if "production" in sample_data:
+            for production_data in sample_data["production"]:
+                if production_data["type"] == "eim":
+                    if production_data["measurementType"] == "production":
+                        total_production = EIMSample.create(production_data)
+                elif production_data["type"] == "inverters":
+                    # TODO: Parse this data too
+                    pass
 
         return SampleData(
             net_consumption=net_consumption,
@@ -124,7 +129,10 @@ class EIMSample:
     eim_line_samples: List[PowerSample]
 
     @staticmethod
-    def create(line_data: Dict[str, Any]) -> EIMSample:
+    def create(line_data: Optional[Dict[str, Any]] = None) -> EIMSample:
+        if line_data is None:
+            return EIMSample([])
+
         assert line_data["type"] == "eim"
 
         ts = datetime.fromtimestamp(line_data["readingTime"], tz=timezone.utc)
