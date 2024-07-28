@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: ["main"]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build_and_test:
     name: Run Docker build and CI tests
@@ -15,11 +19,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Python dependencies
+    - name: Install Python dependencies for linter checks
       run: ./install_python_deps.sh
 
     - name: Run linter checkers
       run: ./test.sh
 
-    - name: Build the Docker image
-      run: docker build -t docker.io/jasonajack/envoy-logger:$(date +%s) .
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        labels: test
