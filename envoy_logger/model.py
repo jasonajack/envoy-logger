@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+LOG = logging.getLogger("model")
 
 
 @dataclass(frozen=True)
@@ -82,24 +85,28 @@ class SampleData:
 
     @staticmethod
     def create(sample_data: Dict[str, Any]) -> SampleData:
-        net_consumption: Optional[EIMSample]
-        total_consumption: Optional[EIMSample]
-        total_production: Optional[EIMSample]
+        net_consumption: Optional[EIMSample] = EIMSample.create()
+        total_consumption: Optional[EIMSample] = EIMSample.create()
+        total_production: Optional[EIMSample] = EIMSample.create()
 
-        for consumption_data in sample_data["consumption"]:
-            if consumption_data["type"] == "eim":
-                if consumption_data["measurementType"] == "net-consumption":
-                    net_consumption = EIMSample.create(consumption_data)
-                elif consumption_data["measurementType"] == "total-consumption":
-                    total_consumption = EIMSample.create(consumption_data)
+        LOG.debug(f"Creating sample data from: {json.dumps(sample_data, indent=2)}")
 
-        for production_data in sample_data["production"]:
-            if production_data["type"] == "eim":
-                if production_data["measurementType"] == "production":
-                    total_production = EIMSample.create(production_data)
-            elif production_data["type"] == "inverters":
-                # TODO: Parse this data too
-                pass
+        if "consumption" in sample_data:
+            for consumption_data in sample_data["consumption"]:
+                if consumption_data["type"] == "eim":
+                    if consumption_data["measurementType"] == "net-consumption":
+                        net_consumption = EIMSample.create(consumption_data)
+                    elif consumption_data["measurementType"] == "total-consumption":
+                        total_consumption = EIMSample.create(consumption_data)
+
+        if "production" in sample_data:
+            for production_data in sample_data["production"]:
+                if production_data["type"] == "eim":
+                    if production_data["measurementType"] == "production":
+                        total_production = EIMSample.create(production_data)
+                elif production_data["type"] == "inverters":
+                    # TODO: Parse this data too
+                    pass
 
         return SampleData(
             net_consumption=net_consumption,
@@ -124,7 +131,10 @@ class EIMSample:
     eim_line_samples: List[PowerSample]
 
     @staticmethod
-    def create(line_data: Dict[str, Any]) -> EIMSample:
+    def create(line_data: Optional[Dict[str, Any]] = None) -> EIMSample:
+        if line_data is None:
+            return EIMSample([])
+
         assert line_data["type"] == "eim"
 
         ts = datetime.fromtimestamp(line_data["readingTime"], tz=timezone.utc)

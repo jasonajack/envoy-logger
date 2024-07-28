@@ -16,6 +16,14 @@ def create_sample_data() -> Dict[str, Any]:
     }
 
 
+def create_production_only_sample_data() -> Dict[str, Any]:
+    return {
+        "production": [
+            _create_eim_sample("production"),
+        ],
+    }
+
+
 def _create_eim_sample(measurement_type: str) -> Dict[str, Any]:
     return {
         "type": "eim",
