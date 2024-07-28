@@ -131,7 +131,7 @@ version: '3'
 
 services:
   envoy_logger:
-    image: jasonajack/envoy-logger:latest
+    image: ghcr.io/jasonajack/envoy-logger:latest
     container_name: envoy_logger
     environment:
       #ENVOY_LOGGER_CFG_PATH: /etc/envoy_logger/config.yml
